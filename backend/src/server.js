@@ -17,6 +17,7 @@ const bootstrap = async () => {
 
   server.listen(env.port, () => {
     console.log(`[Server] listening on port ${env.port}`);
+    console.log(`[Server] http://localhost:${env.port}`);
   });
 };
 
