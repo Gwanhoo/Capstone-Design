@@ -1,6 +1,11 @@
 import Link from "next/link";
 
-const navItems = ["제품", "기능", "문서", "가격"];
+const navItems = [
+  { label: "제품", href: "#product" },
+  { label: "기능", href: "#features" },
+  { label: "작동 방식", href: "#how-it-works" },
+  { label: "데모", href: "#demo" },
+];
 
 export function Navbar() {
   return (
@@ -9,15 +14,13 @@ export function Navbar() {
         <div className="text-xl font-bold tracking-tighter text-on-surface">KanBan Ai</div>
 
         <div className="hidden items-center gap-8 md:flex">
-          {navItems.map((item, index) => (
+          {navItems.map((item) => (
             <a
-              key={item}
-              href="#"
-              className={`text-sm font-medium transition-colors duration-200 hover:text-on-surface ${
-                index === 0 ? "border-b-2 border-primary-container pb-1 text-primary" : "text-on-surface-variant"
-              }`}
+              key={item.label}
+              href={item.href}
+              className="border-b-2 border-transparent pb-1 text-sm font-medium text-on-surface-variant transition-colors duration-200 hover:border-primary-container hover:text-primary focus-visible:border-primary-container focus-visible:text-primary"
             >
-              {item}
+              {item.label}
             </a>
           ))}
         </div>

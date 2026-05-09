@@ -3,7 +3,7 @@ import { Sparkles } from "lucide-react";
 
 export function Hero() {
   return (
-    <section className="relative flex min-h-[900px] flex-col items-center justify-center overflow-hidden px-6 pt-28">
+    <section id="product" className="relative flex min-h-[900px] flex-col items-center justify-center overflow-hidden px-6 pt-28">
       <div className="absolute left-1/2 top-1/2 -z-10 h-[800px] w-[800px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary-container/20 blur-[120px]" />
 
       <div className="max-w-4xl space-y-8 text-center">

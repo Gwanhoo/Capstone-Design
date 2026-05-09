@@ -8,7 +8,7 @@ const features = [
 
 export function Features() {
   return (
-    <section className="mx-auto grid max-w-7xl grid-cols-1 gap-4 px-8 py-24 md:grid-cols-4">
+    <section id="features" className="mx-auto grid max-w-7xl grid-cols-1 gap-4 px-8 py-24 md:grid-cols-4">
       {features.map((feature) => (
         <article
           key={feature.title}

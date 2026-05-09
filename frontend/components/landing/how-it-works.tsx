@@ -8,7 +8,7 @@ const steps = [
 
 export function HowItWorks() {
   return (
-    <section className="mx-auto max-w-5xl px-8 py-32">
+    <section id="how-it-works" className="mx-auto max-w-5xl px-8 py-32">
       <div className="mb-16 text-center">
         <h2 className="text-4xl font-extrabold tracking-tight">협업을 위한 설계</h2>
       </div>
