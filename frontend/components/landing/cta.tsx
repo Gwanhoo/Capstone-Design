@@ -1,22 +1,15 @@
+import Link from "next/link";
+
 export function Cta() {
   return (
-    <section className="px-6 pb-24 md:px-10">
-      <div className="mx-auto w-full max-w-7xl rounded-2xl bg-[linear-gradient(145deg,#4f46e5_0%,#131313_75%)] p-8 md:p-14">
-        <div className="max-w-3xl space-y-5">
-          <p className="text-xs uppercase tracking-[0.16em] text-[#dad7ff]">Start with your team</p>
-          <h2 className="text-3xl font-semibold leading-tight tracking-tight text-[#f2f0ff] md:text-5xl">
-            다음 스프린트부터
-            <span className="block">AI 협업 보드로 운영해보세요.</span>
-          </h2>
-          <p className="text-sm leading-relaxed text-[#d4d0f7] md:text-base">
-            기존 이슈 트래커를 그대로 가져오고, AI 추천을 켜면 계획-실행-회고가 하나의 흐름으로 연결됩니다.
-          </p>
-          <div className="flex flex-wrap gap-3 pt-2">
-            <button className="rounded-md bg-white px-5 py-3 text-sm font-semibold text-[#1d00a5]">무료 체험 시작</button>
-            <button className="rounded-md bg-[#131313]/60 px-5 py-3 text-sm font-medium text-[#e5e2e1] backdrop-blur">
-              도입 문의
-            </button>
-          </div>
+    <section className="mx-auto mb-24 max-w-7xl px-8">
+      <div className="relative overflow-hidden rounded-3xl border border-outline/20 bg-gradient-to-br from-primary-container to-surface-lowest p-12 text-center md:p-24">
+        <h2 className="text-4xl font-black tracking-tighter md:text-6xl">AI와 함께 더 스마트하게 협업하세요</h2>
+        <p className="mx-auto mt-6 max-w-xl text-xl text-on-surface-variant">이미 5만 명 이상의 개발자가 전환했습니다.</p>
+        <div className="pt-8">
+          <Link href="/signup" className="rounded-md bg-white px-10 py-5 text-lg font-bold text-[#1d00a5] transition-all hover:shadow-[0_0_30px_rgba(255,255,255,0.3)]">
+            첫 프로젝트 시작하기
+          </Link>
         </div>
       </div>
     </section>
