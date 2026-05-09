@@ -8,18 +8,15 @@ import { Navbar } from "@/components/landing/navbar";
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen bg-[#131313] text-[#e5e2e1]">
-      {/* Top Navigation */}
+    <main className="min-h-screen bg-surface text-on-surface" style={{ fontFamily: "Inter, system-ui, -apple-system, Segoe UI, sans-serif" }}>
       <Navbar />
-
-      {/* Core landing flow */}
-      <Hero />
-      <Features />
-      <KanbanPreview />
-      <HowItWorks />
-      <Cta />
-
-      {/* Footer */}
+      <div className="pt-20">
+        <Hero />
+        <Features />
+        <KanbanPreview />
+        <HowItWorks />
+        <Cta />
+      </div>
       <Footer />
     </main>
   );
