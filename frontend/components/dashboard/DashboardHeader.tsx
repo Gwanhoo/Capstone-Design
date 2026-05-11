@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Plus, Search } from "lucide-react";
 
 export function DashboardHeader() {
@@ -17,10 +18,13 @@ export function DashboardHeader() {
             className="h-11 w-full rounded-xl border border-white/10 bg-white/5 pl-9 pr-3 text-sm text-on-surface outline-none transition-colors placeholder:text-outline focus:border-primary/40 sm:w-60"
           />
         </label>
-        <button className="flex h-11 items-center justify-center gap-2 rounded-xl bg-[linear-gradient(135deg,#c3c0ff_0%,#4f46e5_100%)] px-4 font-semibold text-[#1d00a5] shadow-lg transition-all hover:brightness-110 active:scale-[0.98]">
+        <Link
+          href="/projects/new"
+          className="flex h-11 items-center justify-center gap-2 rounded-xl bg-[linear-gradient(135deg,#c3c0ff_0%,#4f46e5_100%)] px-4 font-semibold text-[#1d00a5] shadow-lg transition-all hover:brightness-110 active:scale-[0.98]"
+        >
           <Plus className="h-4 w-4" />
           새 프로젝트
-        </button>
+        </Link>
       </div>
     </header>
   );
