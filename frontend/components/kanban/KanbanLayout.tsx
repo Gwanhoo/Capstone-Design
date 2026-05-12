@@ -17,7 +17,7 @@ export function KanbanLayout() {
         <KanbanHeader onGenerateAiTask={board.addAiGeneratedTask} />
         <div className="flex min-h-0 flex-1">
           <div className="min-w-0 flex-1 overflow-hidden">
-            <KanbanBoard
+            {board.isLoading ? <div className="px-6 py-6 text-sm text-on-surface-variant">작업을 불러오는 중...</div> : <KanbanBoard
               orderedColumns={board.orderedColumns}
               tasks={board.tasks}
               activeTaskId={board.dragMeta?.taskId ?? null}
@@ -28,7 +28,8 @@ export function KanbanLayout() {
               createTask={board.createTask}
               updateTask={board.updateTask}
               deleteTask={board.deleteTask}
-            />
+            />}
+            {board.error ? <div className="px-6 pb-2 text-sm text-red-300">{board.error}</div> : null}
           </div>
           <div className="hidden xl:block">
             <TeamChatPanel initialMessages={initialMessages} onAddRecommendedTask={board.addAiGeneratedTask} />
