@@ -1,7 +1,7 @@
 "use client";
 
 import { PlusCircle } from "lucide-react";
-import { KanbanColumnType, Task } from "./types";
+import { KanbanColumnType, Task, TaskInput } from "./types";
 import { KanbanColumn } from "./KanbanColumn";
 import { TaskModal } from "./TaskModal";
 import { useTaskModal } from "./useTaskModal";
@@ -14,7 +14,7 @@ type Props = {
   setDropColumnId: (id: string | null) => void;
   startDrag: (taskId: string, columnId: string, index: number) => void;
   moveTask: (columnId: string, index?: number) => void;
-  createTask: (columnId: string, payload: { title: string; description: string; priority: "긴급" | "높음" | "보통" | "낮음"; assignee: string; dueDate: string }) => void;
+  createTask: (columnId: string, payload: TaskInput) => void;
   updateTask: (taskId: string, partial: Partial<Task>) => void;
   deleteTask: (taskId: string) => void;
 };
