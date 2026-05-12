@@ -14,6 +14,8 @@ export type Task = {
   priority: Priority;
 };
 
+export type TaskInput = Pick<Task, "title" | "description" | "priority" | "assignee" | "dueDate">;
+
 export type KanbanColumnType = {
   id: string;
   title: string;

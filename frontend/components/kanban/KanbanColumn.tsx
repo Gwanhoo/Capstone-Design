@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Plus } from "lucide-react";
 import { TaskCard } from "./TaskCard";
 import { TaskForm } from "./TaskForm";
-import { KanbanColumnType, Task } from "./types";
+import { KanbanColumnType, Task, TaskInput } from "./types";
 
 const toneClass = { slate: "bg-outline", primary: "bg-primary", tertiary: "bg-tertiary" };
 
@@ -12,7 +12,7 @@ type Props = {
   column: KanbanColumnType; tasks: Task[]; activeTaskId: string | null; isDropActive: boolean;
   onDropTask: (columnId: string, index?: number) => void; onDragTask: (taskId: string, columnId: string, index: number) => void;
   onOpenTask: (taskId: string) => void; onDeleteTask: (taskId: string) => void;
-  onAddTask: (columnId: string, payload: { title: string; description: string; priority: "긴급" | "높음" | "보통" | "낮음"; assignee: string; dueDate: string }) => void;
+  onAddTask: (columnId: string, payload: TaskInput) => void;
   onSetDropActive: (columnId: string | null) => void;
 };
 

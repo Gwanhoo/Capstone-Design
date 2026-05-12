@@ -2,11 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { initialColumns, initialTasks } from "./mockData";
-import { KanbanColumnType, Priority, Task } from "./types";
+import { KanbanColumnType, Task, TaskInput } from "./types";
 
 type DragMeta = { taskId: string; fromColumnId: string; fromIndex: number } | null;
-type TaskInput = { title: string; description: string; priority: Priority; assignee: string; dueDate: string };
-
 export function useKanbanBoard() {
   const [columns, setColumns] = useState<KanbanColumnType[]>(initialColumns);
   const [tasks, setTasks] = useState<Record<string, Task>>(initialTasks);
