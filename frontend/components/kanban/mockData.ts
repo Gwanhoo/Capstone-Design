@@ -57,7 +57,7 @@ export const initialTasks: Record<string, Task> = {
 
 export const initialColumns: KanbanColumnType[] = [
   { id: "todo", title: "할 일", tone: "slate", taskIds: ["task-2", "task-3"] },
-  { id: "doing", title: "진행 중", tone: "primary", taskIds: ["task-1"] },
+  { id: "in-progress", title: "진행 중", tone: "primary", taskIds: ["task-1"] },
   { id: "done", title: "완료", tone: "tertiary", taskIds: ["task-4"] }
 ];
 

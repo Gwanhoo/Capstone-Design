@@ -2,6 +2,8 @@ export type Priority = "긴급" | "높음" | "보통" | "낮음";
 
 export type Task = {
   id: string;
+  columnId: string;
+  order: number;
   title: string;
   description: string;
   assignee: string;
@@ -12,6 +14,8 @@ export type Task = {
   dueDate: string;
   aiStatus: string;
   priority: Priority;
+  createdAt?: string;
+  updatedAt?: string;
 };
 
 export type TaskInput = Pick<Task, "title" | "description" | "priority" | "assignee" | "dueDate">;
