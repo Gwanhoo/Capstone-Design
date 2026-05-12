@@ -25,7 +25,7 @@ export function KanbanLayout() {
               setDropColumnId={board.setDropColumnId}
               startDrag={board.startDrag}
               moveTask={board.moveTask}
-              addTask={board.addTask}
+              createTask={board.createTask}
               updateTask={board.updateTask}
               deleteTask={board.deleteTask}
             />

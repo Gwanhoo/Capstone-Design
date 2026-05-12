@@ -12,7 +12,7 @@ type Props = {
   column: KanbanColumnType; tasks: Task[]; activeTaskId: string | null; isDropActive: boolean;
   onDropTask: (columnId: string, index?: number) => void; onDragTask: (taskId: string, columnId: string, index: number) => void;
   onOpenTask: (taskId: string) => void; onDeleteTask: (taskId: string) => void;
-  onAddTask: (columnId: string, payload: { title: string; description: string; priority: any; assignee: string; dueDate: string }) => void;
+  onAddTask: (columnId: string, payload: { title: string; description: string; priority: "긴급" | "높음" | "보통" | "낮음"; assignee: string; dueDate: string }) => void;
   onSetDropActive: (columnId: string | null) => void;
 };
 

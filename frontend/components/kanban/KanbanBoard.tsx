@@ -14,7 +14,7 @@ type Props = {
   setDropColumnId: (id: string | null) => void;
   startDrag: (taskId: string, columnId: string, index: number) => void;
   moveTask: (columnId: string, index?: number) => void;
-  addTask: (columnId: string, payload: { title: string; description: string; priority: any; assignee: string; dueDate: string }) => void;
+  createTask: (columnId: string, payload: { title: string; description: string; priority: "긴급" | "높음" | "보통" | "낮음"; assignee: string; dueDate: string }) => void;
   updateTask: (taskId: string, partial: Partial<Task>) => void;
   deleteTask: (taskId: string) => void;
 };
@@ -38,7 +38,7 @@ export function KanbanBoard(props: Props) {
             onSetDropActive={props.setDropColumnId}
             onOpenTask={openTaskModal}
             onDeleteTask={(taskId) => { if (confirm("정말 삭제하시겠습니까?")) props.deleteTask(taskId); }}
-            onAddTask={props.addTask}
+            onAddTask={props.createTask}
           />
         ))}
         <button className="h-28 min-w-[280px] self-start rounded-2xl border border-dashed border-white/15 bg-white/[0.03] text-on-surface-variant transition hover:border-primary/40 hover:bg-primary/5 hover:text-primary"><span className="flex flex-col items-center justify-center gap-2 text-sm font-semibold"><PlusCircle className="h-5 w-5" />새 열 추가</span></button>
