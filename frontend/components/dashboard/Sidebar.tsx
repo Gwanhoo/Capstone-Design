@@ -1,5 +1,9 @@
+"use client";
+
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { FolderKanban, LayoutDashboard, LogOut, Settings, Sparkles, UserCircle2 } from "lucide-react";
+import { useAuth } from "@/components/providers/AuthProvider";
 
 const menus = [
   { label: "대시보드", href: "/dashboard", icon: LayoutDashboard, active: true },
@@ -9,6 +13,14 @@ const menus = [
 ];
 
 export function Sidebar() {
+  const router = useRouter();
+  const { user, logout } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    router.push("/login");
+  };
+
   return (
     <aside className="fixed inset-y-0 left-0 z-40 w-72 p-4">
       <div className="flex h-full flex-col rounded-2xl border border-white/10 bg-white/5 p-5 shadow-[0_12px_40px_rgba(0,0,0,0.35)] backdrop-blur-xl">
@@ -46,11 +58,11 @@ export function Sidebar() {
           <div className="mb-4 flex items-center gap-3">
             <UserCircle2 className="h-8 w-8 text-primary" />
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold text-on-surface">김개발</p>
-              <p className="truncate text-xs text-on-surface-variant">kim.dev@kineticvoid.ai</p>
+              <p className="truncate text-sm font-semibold text-on-surface">{user?.name ?? "사용자"}</p>
+              <p className="truncate text-xs text-on-surface-variant">{user?.email ?? ""}</p>
             </div>
           </div>
-          <button className="flex w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 py-2.5 text-sm text-on-surface-variant transition-colors hover:text-on-surface">
+          <button onClick={handleLogout} className="flex w-full items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/5 py-2.5 text-sm text-on-surface-variant transition-colors hover:text-on-surface">
             <LogOut className="h-4 w-4" />
             로그아웃
           </button>

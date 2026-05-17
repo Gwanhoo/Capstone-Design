@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/providers/AuthProvider";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { EmptyState } from "@/components/dashboard/EmptyState";
@@ -22,11 +24,22 @@ const formatDate = (iso: string) => {
 };
 
 export default function DashboardPage() {
+  const router = useRouter();
+  const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const [projects, setProjects] = useState<ProjectItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    if (!isAuthLoading && !isAuthenticated) {
+      router.replace("/login");
+      return;
+    }
+
+    if (!isAuthenticated) {
+      return;
+    }
+
     const loadProjects = async () => {
       try {
         setIsLoading(true);
@@ -52,7 +65,7 @@ export default function DashboardPage() {
     };
 
     loadProjects();
-  }, []);
+  }, [isAuthLoading, isAuthenticated, router]);
 
   const hasProjects = useMemo(() => projects.length > 0, [projects]);
 
