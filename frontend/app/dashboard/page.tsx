@@ -1,49 +1,61 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
 import { DashboardHeader } from "@/components/dashboard/DashboardHeader";
 import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { ProjectCard } from "@/components/dashboard/ProjectCard";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { ProjectItem } from "@/components/dashboard/types";
-
-const PROJECTS: ProjectItem[] = [
-  {
-    id: 1,
-    name: "옵시디언 포지 코어",
-    status: "진행중",
-    description: "AI 코드 리뷰 흐름과 실시간 협업 편집기를 통합하는 메인 프로젝트입니다.",
-    progress: 74,
-    members: 8,
-    updatedAt: "2026.05.10"
-  },
-  {
-    id: 2,
-    name: "문서 자동화 허브",
-    status: "완료",
-    description: "요구사항 문서와 회의록을 자동 분류하고 요약하는 지식 관리 파이프라인 구축.",
-    progress: 100,
-    members: 5,
-    updatedAt: "2026.05.08"
-  },
-  {
-    id: 3,
-    name: "테스트 시나리오 엔진",
-    status: "대기중",
-    description: "AI 추천 기반의 회귀 테스트 시나리오 생성 기능을 다음 스프린트에 반영 예정입니다.",
-    progress: 32,
-    members: 4,
-    updatedAt: "2026.05.07"
-  }
-];
+import { getProjects } from "@/lib/api/projectApi";
 
 const STATS = [
   { title: "진행중 프로젝트", value: "12", note: "지난주 대비 +2" },
   { title: "완료된 작업", value: "84", note: "이번 주 누적" },
-  { title: "AI 추천 작업", value: "19", note: "우선순위 높음 6건" }
+  { title: "AI 추천 작업", value: "19", note: "우선순위 높음 6건" },
 ];
 
-const SHOW_EMPTY_STATE = false;
+const formatDate = (iso: string) => {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "-";
+  return date.toISOString().slice(0, 10).replaceAll("-", ".");
+};
 
 export default function DashboardPage() {
+  const [projects, setProjects] = useState<ProjectItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadProjects = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const data = await getProjects();
+        setProjects(
+          data.map((project) => ({
+            id: project.id,
+            name: project.name,
+            description: project.description || "프로젝트 설명이 없습니다.",
+            status: project.status === "archived" ? "완료" : "진행중",
+            progress: project.status === "archived" ? 100 : 0,
+            members: project.memberCount,
+            updatedAt: formatDate(project.updatedAt),
+          })),
+        );
+      } catch (loadError) {
+        console.error(loadError);
+        setError("프로젝트 목록을 불러오지 못했습니다.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadProjects();
+  }, []);
+
+  const hasProjects = useMemo(() => projects.length > 0, [projects]);
+
   return (
     <DashboardLayout>
       <DashboardHeader />
@@ -54,11 +66,14 @@ export default function DashboardPage() {
         ))}
       </section>
 
-      {SHOW_EMPTY_STATE ? (
+      {isLoading ? <div className="px-1 py-8 text-sm text-on-surface-variant">프로젝트를 불러오는 중...</div> : null}
+      {error ? <div className="px-1 pb-4 text-sm text-red-300">{error}</div> : null}
+
+      {!isLoading && !hasProjects ? (
         <EmptyState />
       ) : (
         <section className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
-          {PROJECTS.map((project) => (
+          {projects.map((project) => (
             <ProjectCard key={project.id} project={project} />
           ))}
         </section>
