@@ -10,8 +10,7 @@ export type Project = {
 };
 
 type BackendProject = {
-  _id?: string;
-  id?: string;
+  _id: string;
   name: string;
   description: string;
   status: "active" | "archived";
@@ -35,24 +34,20 @@ const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
   return json.data as T;
 };
 
-const mapProject = (project: BackendProject): Project => {
-  const resolvedId = project._id ?? project.id ?? "";
-
-  return {
-    id: resolvedId,
-    name: project.name,
-    description: project.description,
-    status: project.status,
-    createdBy: project.createdBy,
-    memberCount: project.memberCount,
-    createdAt: project.createdAt,
-    updatedAt: project.updatedAt,
-  };
-};
+const mapProject = (project: BackendProject): Project => ({
+  id: String(project._id),
+  name: project.name,
+  description: project.description,
+  status: project.status,
+  createdBy: project.createdBy,
+  memberCount: project.memberCount,
+  createdAt: project.createdAt,
+  updatedAt: project.updatedAt,
+});
 
 export const getProjects = async () => {
   const data = await request<BackendProject[]>("/api/projects");
-  return data.map(mapProject).filter((project) => Boolean(project.id));
+  return data.map(mapProject);
 };
 
 export const getProjectById = async (projectId: string) => {
