@@ -22,4 +22,5 @@ export const env = {
   clientUrl: process.env.CLIENT_URL || 'http://localhost:5173',
   openAiApiKey: process.env.OPENAI_API_KEY || '',
   skipDb,
+  jwtSecret: process.env.JWT_SECRET || 'local-dev-secret',
 };
