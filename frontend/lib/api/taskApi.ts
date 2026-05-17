@@ -1,8 +1,6 @@
 import { Task, TaskInput } from "@/components/kanban/types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
-const PROJECT_ID = "ai-collab";
-
 type BackendPriority = "urgent" | "high" | "medium" | "low";
 type BackendTask = { _id: string; projectId: string; columnId: string; title: string; description: string; priority: BackendPriority; assignee: string; progress: number; dueDate: string | null; aiStatus: string; order: number; createdAt: string; updatedAt: string };
 
@@ -55,7 +53,7 @@ const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
   return json.data as T;
 };
 
-export const getTasksByProject = async (projectId = PROJECT_ID) => {
+export const getTasksByProject = async (projectId: string) => {
   const data = await request<BackendTask[]>(`/api/projects/${projectId}/tasks`);
   return data.map(mapTaskFromBackend);
 };

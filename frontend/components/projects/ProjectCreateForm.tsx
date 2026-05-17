@@ -2,17 +2,22 @@
 
 import Link from "next/link";
 import { FormEvent, KeyboardEvent, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Plus, Trash2 } from "lucide-react";
+import { createProject } from "@/lib/api/projectApi";
 
 type ProjectStatus = "진행중" | "대기중";
 
 export function ProjectCreateForm() {
+  const router = useRouter();
   const [projectName, setProjectName] = useState("");
   const [description, setDescription] = useState("");
   const [goal, setGoal] = useState("");
   const [inviteEmail, setInviteEmail] = useState("");
   const [invites, setInvites] = useState<string[]>([]);
   const [status, setStatus] = useState<ProjectStatus>("진행중");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleAddInvite = () => {
     const trimmed = inviteEmail.trim();
@@ -36,11 +41,27 @@ export function ProjectCreateForm() {
     setInvites((prev) => prev.filter((item) => item !== email));
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!projectName.trim()) {
+      setError("프로젝트 이름은 필수입니다.");
+      return;
+    }
 
-    // TODO: 프로젝트 생성 API 연결
-    console.log({ projectName, description, goal, invites, status });
+    try {
+      setIsSubmitting(true);
+      setError(null);
+      const created = await createProject({
+        name: projectName.trim(),
+        description: description.trim(),
+      });
+      router.push(`/projects/${created.id}/board`);
+    } catch (submitError) {
+      console.error(submitError);
+      setError("프로젝트 생성에 실패했습니다.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -163,6 +184,8 @@ export function ProjectCreateForm() {
           </div>
         </div>
 
+        {error ? <p className="mt-4 text-sm text-red-300">{error}</p> : null}
+
         <div className="mt-7 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
           <Link
             href="/dashboard"
@@ -172,9 +195,10 @@ export function ProjectCreateForm() {
           </Link>
           <button
             type="submit"
-            className="inline-flex h-11 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#c3c0ff_0%,#4f46e5_100%)] px-5 text-sm font-semibold text-[#1d00a5] shadow-lg transition hover:brightness-110 active:scale-[0.98]"
+            disabled={isSubmitting}
+            className="inline-flex h-11 items-center justify-center rounded-xl bg-[linear-gradient(135deg,#c3c0ff_0%,#4f46e5_100%)] px-5 text-sm font-semibold text-[#1d00a5] shadow-lg transition hover:brightness-110 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70"
           >
-            프로젝트 생성
+            {isSubmitting ? "생성 중..." : "프로젝트 생성"}
           </button>
         </div>
       </form>

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { CalendarClock, Users } from "lucide-react";
 import { ProjectItem } from "./types";
 
@@ -31,9 +32,9 @@ export function ProjectCard({ project }: { project: ProjectItem }) {
         <span className="flex items-center gap-1.5"><CalendarClock className="h-3.5 w-3.5" /> {project.updatedAt}</span>
       </div>
 
-      <button className="mt-4 w-full rounded-lg border border-primary/30 bg-primary/10 py-2.5 text-sm font-medium text-primary transition-colors hover:bg-primary/20">
+      <Link href={`/projects/${project.id}/board`} className="mt-4 inline-flex w-full items-center justify-center rounded-lg border border-primary/30 bg-primary/10 py-2.5 text-sm font-medium text-primary transition-colors hover:bg-primary/20">
         보드 열기
-      </button>
+      </Link>
     </article>
   );
 }

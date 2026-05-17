@@ -7,8 +7,8 @@ import { ProjectSidebar } from "./ProjectSidebar";
 import { TeamChatPanel } from "./TeamChatPanel";
 import { useKanbanBoard } from "./useKanbanBoard";
 
-export function KanbanLayout() {
-  const board = useKanbanBoard();
+export function KanbanLayout({ projectId }: { projectId: string }) {
+  const board = useKanbanBoard(projectId);
 
   return (
     <div className="flex h-screen bg-surface text-on-surface">

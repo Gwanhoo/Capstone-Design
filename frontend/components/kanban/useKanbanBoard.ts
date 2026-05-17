@@ -6,9 +6,7 @@ import { KanbanColumnType, Task, TaskInput } from "./types";
 import { createTask as createTaskApi, deleteTask as deleteTaskApi, getTasksByProject, moveTask as moveTaskApi, updateTask as updateTaskApi } from "@/lib/api/taskApi";
 
 type DragMeta = { taskId: string; fromColumnId: string; fromIndex: number } | null;
-const PROJECT_ID = "ai-collab";
-
-export function useKanbanBoard() {
+export function useKanbanBoard(projectId: string) {
   const [columns, setColumns] = useState<KanbanColumnType[]>(initialColumns);
   const [tasks, setTasks] = useState<Record<string, Task>>({});
   const [dragMeta, setDragMeta] = useState<DragMeta>(null);
@@ -21,7 +19,7 @@ export function useKanbanBoard() {
       try {
         setIsLoading(true);
         setError(null);
-        const fetchedTasks = await getTasksByProject(PROJECT_ID);
+        const fetchedTasks = await getTasksByProject(projectId);
         const nextTasks: Record<string, Task> = {};
         const columnMap: Record<string, string[]> = { todo: [], "in-progress": [], done: [] };
 
@@ -44,7 +42,7 @@ export function useKanbanBoard() {
     };
 
     loadTasks();
-  }, []);
+  }, [projectId]);
 
   const orderedColumns = useMemo(() => columns, [columns]);
   const startDrag = (taskId: string, fromColumnId: string, fromIndex: number) => setDragMeta({ taskId, fromColumnId, fromIndex });
@@ -85,7 +83,7 @@ export function useKanbanBoard() {
     try {
       setError(null);
       const column = columns.find((col) => col.id === columnId);
-      const created = await createTaskApi(PROJECT_ID, { ...task, columnId, order: column?.taskIds.length ?? 0 });
+      const created = await createTaskApi(projectId, { ...task, columnId, order: column?.taskIds.length ?? 0 });
       setTasks((prev) => ({ ...prev, [created.id]: created }));
       setColumns((prev) => prev.map((col) => (col.id === columnId ? { ...col, taskIds: [...col.taskIds, created.id] } : col)));
     } catch (createError) {
