@@ -55,7 +55,8 @@ export function ProjectCreateForm() {
         name: projectName.trim(),
         description: description.trim(),
       });
-      router.push(`/projects/${created.id}/board`);
+      if (!created.id) throw new Error("생성된 프로젝트 ID가 없습니다.");
+      router.push(`/projects/${encodeURIComponent(created.id)}/board`);
     } catch (submitError) {
       console.error(submitError);
       setError("프로젝트 생성에 실패했습니다.");
