@@ -1,3 +1,5 @@
+import { getSocketId } from "@/lib/socket/client";
+
 type ApiResponse<T> = {
   success: boolean;
   data: T;
@@ -23,6 +25,7 @@ export const apiRequest = async <T>(path: string, init?: RequestInit): Promise<T
     headers: {
       "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(getSocketId() ? { "x-socket-id": String(getSocketId()) } : {}),
       ...(init?.headers ?? {}),
     },
     cache: "no-store",

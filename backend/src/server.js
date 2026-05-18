@@ -1,7 +1,9 @@
 import http from 'http';
+import { Server } from 'socket.io';
 import app from './app.js';
 import { connectDatabase } from './config/db.js';
 import { env } from './config/env.js';
+import { registerSocketHandlers } from './sockets/index.js';
 
 const bootstrap = async () => {
   if (!env.skipDb) {
@@ -11,9 +13,15 @@ const bootstrap = async () => {
   }
 
   const server = http.createServer(app);
+  const io = new Server(server, {
+    cors: {
+      origin: env.clientUrl,
+      credentials: true,
+    },
+  });
 
-  // TODO: Socket.io 연결 시 아래 server 인스턴스를 사용
-  // const io = new Server(server, { cors: { origin: env.clientUrl } });
+  registerSocketHandlers(io);
+  app.set('io', io);
 
   server.listen(env.port, () => {
     console.log(`[Server] listening on port ${env.port}`);
