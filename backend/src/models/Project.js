@@ -19,8 +19,12 @@ const projectSchema = new mongoose.Schema(
     },
     createdBy: {
       type: String,
-      default: 'local-user',
+      required: true,
       trim: true,
+    },
+    members: {
+      type: [String],
+      default: [],
     },
     memberCount: {
       type: Number,
