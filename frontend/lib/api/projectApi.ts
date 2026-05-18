@@ -1,3 +1,5 @@
+import { apiRequest } from "@/lib/api/client";
+
 export type Project = {
   id: string;
   name: string;
@@ -9,29 +11,34 @@ export type Project = {
   updatedAt: string;
 };
 
+export type ProjectMember = {
+  id: string;
+  name: string;
+  email: string;
+  isOwner: boolean;
+};
+
 type BackendProject = {
   _id: string;
   name: string;
   description: string;
   status: "active" | "archived";
   createdBy: string;
+  members?: string[];
   memberCount: number;
   createdAt: string;
   updatedAt: string;
 };
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+type BackendMember = {
+  _id: string;
+  name: string;
+  email: string;
+};
 
-const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
-  if (!API_BASE_URL) throw new Error("NEXT_PUBLIC_API_BASE_URL 환경변수가 필요합니다.");
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
-    cache: "no-store",
-  });
-  const json = await response.json();
-  if (!response.ok || !json.success) throw new Error(json.message ?? "API 요청에 실패했습니다.");
-  return json.data as T;
+type MembersResponse = {
+  createdBy: string;
+  members: BackendMember[];
 };
 
 const mapProject = (project: BackendProject): Project => ({
@@ -45,20 +52,46 @@ const mapProject = (project: BackendProject): Project => ({
   updatedAt: project.updatedAt,
 });
 
+const mapMember = (member: BackendMember, createdBy: string): ProjectMember => ({
+  id: String(member._id),
+  name: member.name,
+  email: member.email,
+  isOwner: String(member._id) === createdBy,
+});
+
 export const getProjects = async () => {
-  const data = await request<BackendProject[]>("/api/projects");
+  const data = await apiRequest<BackendProject[]>("/api/projects");
   return data.map(mapProject);
 };
 
 export const getProjectById = async (projectId: string) => {
-  const data = await request<BackendProject>(`/api/projects/${projectId}`);
+  const data = await apiRequest<BackendProject>(`/api/projects/${projectId}`);
   return mapProject(data);
 };
 
 export const createProject = async (payload: { name: string; description?: string }) => {
-  const data = await request<BackendProject>("/api/projects", {
+  const data = await apiRequest<BackendProject>("/api/projects", {
     method: "POST",
     body: JSON.stringify(payload),
   });
   return mapProject(data);
+};
+
+export const getProjectMembers = async (projectId: string) => {
+  const data = await apiRequest<MembersResponse>(`/api/projects/${projectId}/members`);
+  return data.members.map((member) => mapMember(member, data.createdBy));
+};
+
+export const addProjectMember = async (projectId: string, email: string) => {
+  const data = await apiRequest<BackendMember>(`/api/projects/${projectId}/members`, {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+  return mapMember(data, "");
+};
+
+export const removeProjectMember = async (projectId: string, userId: string) => {
+  await apiRequest(`/api/projects/${projectId}/members/${userId}`, {
+    method: "DELETE",
+  });
 };
