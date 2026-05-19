@@ -3,7 +3,7 @@
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { AuthUser, getMe, login, register } from "@/lib/api/authApi";
 
-const AUTH_TOKEN_KEY = "auth_token";
+import { clearAccessToken, getAccessToken, setAccessToken } from "@/lib/api/token";
 
 type AuthContextType = {
   user: AuthUser | null;
@@ -26,13 +26,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   const persistAuth = useCallback((nextToken: string, nextUser: AuthUser) => {
-    localStorage.setItem(AUTH_TOKEN_KEY, nextToken);
+    setAccessToken(nextToken);
     setToken(nextToken);
     setUser(nextUser);
   }, []);
 
   const logout = useCallback(() => {
-    localStorage.removeItem(AUTH_TOKEN_KEY);
+    clearAccessToken();
     setToken(null);
     setUser(null);
     setError(null);
@@ -42,7 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const bootstrap = async () => {
-      const savedToken = localStorage.getItem(AUTH_TOKEN_KEY);
+      const savedToken = getAccessToken();
 
       if (!savedToken) {
         setIsLoading(false);
@@ -62,6 +62,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     bootstrap();
   }, [logout, persistAuth]);
 
+
+  useEffect(() => {
+    const onUnauthorized = () => logout();
+    window.addEventListener("auth:unauthorized", onUnauthorized);
+    return () => window.removeEventListener("auth:unauthorized", onUnauthorized);
+  }, [logout]);
   const loginWithEmail = useCallback(async (payload: { email: string; password: string }) => {
     setIsLoading(true);
     setError(null);

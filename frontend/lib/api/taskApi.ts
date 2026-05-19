@@ -1,6 +1,6 @@
 import { Task, TaskInput } from "@/components/kanban/types";
+import { apiRequest } from "@/lib/api/client";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 type BackendPriority = "urgent" | "high" | "medium" | "low";
 type BackendTask = { _id: string; projectId: string; columnId: string; title: string; description: string; priority: BackendPriority; assignee: string; progress: number; dueDate: string | null; aiStatus: string; order: number; createdAt: string; updatedAt: string };
 
@@ -45,34 +45,26 @@ const mapPayloadToBackend = (payload: Partial<TaskInput>) => ({
   ...(payload.dueDate !== undefined ? { dueDate: parseDueDate(payload.dueDate) } : {}),
 });
 
-const request = async <T>(path: string, init?: RequestInit): Promise<T> => {
-  if (!API_BASE_URL) throw new Error("NEXT_PUBLIC_API_BASE_URL 환경변수가 필요합니다.");
-  const response = await fetch(`${API_BASE_URL}${path}`, { ...init, headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) }, cache: "no-store" });
-  const json = await response.json();
-  if (!response.ok || !json.success) throw new Error(json.message ?? "API 요청에 실패했습니다.");
-  return json.data as T;
-};
-
 export const getTasksByProject = async (projectId: string) => {
-  const data = await request<BackendTask[]>(`/api/projects/${projectId}/tasks`);
+  const data = await apiRequest<BackendTask[]>(`/api/projects/${projectId}/tasks`);
   return data.map(mapTaskFromBackend);
 };
 
 export const createTask = async (projectId: string, payload: TaskInput & { columnId: string; order: number }) => {
-  const data = await request<BackendTask>(`/api/projects/${projectId}/tasks`, { method: "POST", body: JSON.stringify(mapPayloadToBackend(payload)) });
+  const data = await apiRequest<BackendTask>(`/api/projects/${projectId}/tasks`, { method: "POST", body: JSON.stringify(mapPayloadToBackend(payload)) });
   return mapTaskFromBackend(data);
 };
 
 export const updateTask = async (taskId: string, payload: Partial<TaskInput>) => {
-  const data = await request<BackendTask>(`/api/tasks/${taskId}`, { method: "PATCH", body: JSON.stringify(mapPayloadToBackend(payload)) });
+  const data = await apiRequest<BackendTask>(`/api/tasks/${taskId}`, { method: "PATCH", body: JSON.stringify(mapPayloadToBackend(payload)) });
   return mapTaskFromBackend(data);
 };
 
 export const deleteTask = async (taskId: string) => {
-  await request(`/api/tasks/${taskId}`, { method: "DELETE" });
+  await apiRequest(`/api/tasks/${taskId}`, { method: "DELETE" });
 };
 
 export const moveTask = async (taskId: string, payload: { columnId: string; order: number }) => {
-  const data = await request<BackendTask>(`/api/tasks/${taskId}/move`, { method: "PATCH", body: JSON.stringify(payload) });
+  const data = await apiRequest<BackendTask>(`/api/tasks/${taskId}/move`, { method: "PATCH", body: JSON.stringify(payload) });
   return mapTaskFromBackend(data);
 };

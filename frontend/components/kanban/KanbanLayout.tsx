@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { getProjectById } from "@/lib/api/projectApi";
-import { initialMessages } from "./mockData";
 import { KanbanBoard } from "./KanbanBoard";
 import { KanbanHeader } from "./KanbanHeader";
 import { ProjectSidebar } from "./ProjectSidebar";
 import { TeamChatPanel } from "./TeamChatPanel";
+import { MemberManagementPanel } from "./MemberManagementPanel";
 import { useKanbanBoard } from "./useKanbanBoard";
 
 export function KanbanLayout({ projectId }: { projectId: string }) {
@@ -57,8 +57,9 @@ export function KanbanLayout({ projectId }: { projectId: string }) {
             {projectError ? <div className="px-6 pb-2 text-sm text-red-300">{projectError}</div> : null}
             {board.error ? <div className="px-6 pb-2 text-sm text-red-300">{board.error}</div> : null}
           </div>
-          <div className="hidden xl:block">
-            <TeamChatPanel initialMessages={initialMessages} onAddRecommendedTask={board.addAiGeneratedTask} />
+          <div className="hidden xl:flex xl:w-[340px] xl:flex-col xl:gap-3 xl:p-3">
+            <MemberManagementPanel projectId={projectId} />
+            <TeamChatPanel projectId={projectId} />
           </div>
         </div>
       </div>

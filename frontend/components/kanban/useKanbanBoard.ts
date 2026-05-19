@@ -4,8 +4,38 @@ import { useEffect, useMemo, useState } from "react";
 import { initialColumns } from "./mockData";
 import { KanbanColumnType, Task, TaskInput } from "./types";
 import { createTask as createTaskApi, deleteTask as deleteTaskApi, getTasksByProject, moveTask as moveTaskApi, updateTask as updateTaskApi } from "@/lib/api/taskApi";
+import { connectSocket, disconnectSocket } from "@/lib/socket/client";
 
 type DragMeta = { taskId: string; fromColumnId: string; fromIndex: number } | null;
+
+type BackendPriority = "urgent" | "high" | "medium" | "low";
+type SocketTask = { _id: string; projectId: string; columnId: string; title: string; description: string; priority: BackendPriority; assignee: string; progress: number; dueDate: string | null; aiStatus: string; order: number; createdAt: string; updatedAt: string };
+
+const priorityToFrontend: Record<BackendPriority, Task["priority"]> = { urgent: "긴급", high: "높음", medium: "보통", low: "낮음" };
+const formatDueDate = (value: string | null) => {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toISOString().slice(0, 10).replaceAll("-", ".");
+};
+const mapSocketTask = (task: SocketTask): Task => ({
+  id: task._id,
+  columnId: task.columnId,
+  order: task.order,
+  title: task.title,
+  description: task.description,
+  assignee: task.assignee,
+  assigneeInitial: task.assignee.slice(0, 2) || "-",
+  progress: task.progress,
+  comments: 0,
+  attachments: 0,
+  dueDate: formatDueDate(task.dueDate),
+  aiStatus: task.aiStatus,
+  priority: priorityToFrontend[task.priority] ?? "보통",
+  createdAt: task.createdAt,
+  updatedAt: task.updatedAt,
+});
+
 export function useKanbanBoard(projectId: string) {
   const [columns, setColumns] = useState<KanbanColumnType[]>(initialColumns);
   const [tasks, setTasks] = useState<Record<string, Task>>({});
@@ -42,6 +72,73 @@ export function useKanbanBoard(projectId: string) {
     };
 
     loadTasks();
+  }, [projectId]);
+
+  useEffect(() => {
+    const socket = connectSocket();
+
+    socket.emit("join-project", { projectId }, (response: { ok: boolean; message?: string }) => {
+      if (!response?.ok) {
+        setError(response?.message ?? "실시간 동기화 연결에 실패했습니다.");
+      }
+    });
+
+    const handleCreated = (raw: SocketTask) => {
+      const task = mapSocketTask(raw);
+      setTasks((prev) => {
+        if (prev[task.id]) return { ...prev, [task.id]: { ...prev[task.id], ...task } };
+        return { ...prev, [task.id]: task };
+      });
+      setColumns((prev) => prev.map((col) => {
+        if (col.id !== task.columnId) return col;
+        if (col.taskIds.includes(task.id)) return col;
+        return { ...col, taskIds: [...col.taskIds, task.id] };
+      }));
+    };
+
+    const handleUpdated = (raw: SocketTask) => {
+      const task = mapSocketTask(raw);
+      setTasks((prev) => ({ ...prev, [task.id]: { ...prev[task.id], ...task } }));
+    };
+
+    const handleDeleted = ({ taskId }: { taskId: string }) => {
+      setTasks((prev) => {
+        if (!prev[taskId]) return prev;
+        const next = { ...prev };
+        delete next[taskId];
+        return next;
+      });
+      setColumns((prev) => prev.map((col) => ({ ...col, taskIds: col.taskIds.filter((id) => id !== taskId) })));
+    };
+
+    const handleMoved = (raw: SocketTask) => {
+      const task = mapSocketTask(raw);
+      setTasks((prev) => ({ ...prev, [task.id]: { ...prev[task.id], ...task } }));
+      setColumns((prev) => {
+        const removed = prev.map((col) => ({ ...col, taskIds: col.taskIds.filter((id) => id !== task.id) }));
+        return removed.map((col) => {
+          if (col.id !== task.columnId) return col;
+          const ids = [...col.taskIds];
+          const idx = Math.max(0, Math.min(task.order, ids.length));
+          ids.splice(idx, 0, task.id);
+          return { ...col, taskIds: ids };
+        });
+      });
+    };
+
+    socket.on("task:created", handleCreated);
+    socket.on("task:updated", handleUpdated);
+    socket.on("task:deleted", handleDeleted);
+    socket.on("task:moved", handleMoved);
+
+    return () => {
+      socket.emit("leave-project", { projectId });
+      socket.off("task:created", handleCreated);
+      socket.off("task:updated", handleUpdated);
+      socket.off("task:deleted", handleDeleted);
+      socket.off("task:moved", handleMoved);
+      disconnectSocket();
+    };
   }, [projectId]);
 
   const orderedColumns = useMemo(() => columns, [columns]);
