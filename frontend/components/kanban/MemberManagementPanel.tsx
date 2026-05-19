@@ -3,14 +3,15 @@
 import { FormEvent, useEffect, useState } from "react";
 import { UserMinus, UserPlus } from "lucide-react";
 import { useAuth } from "@/components/providers/AuthProvider";
-import { addProjectMember, getProjectById, getProjectMembers, ProjectMember, removeProjectMember } from "@/lib/api/projectApi";
+import { getProjectById, getProjectMembers, ProjectMember, removeProjectMember } from "@/lib/api/projectApi";
+import { createProjectInvitation } from "@/lib/api/invitationApi";
 
 const parseError = (error: unknown) => {
   const message = error instanceof Error ? error.message : "요청 처리 중 오류가 발생했습니다.";
   if (message.includes("401") || message.includes("unauthorized")) return "로그인이 만료되었습니다. 다시 로그인해주세요.";
   if (message.includes("403") || message.includes("권한")) return "권한이 없습니다. 프로젝트 소유자만 수행할 수 있습니다.";
   if (message.includes("404") || message.includes("not found")) return "대상을 찾을 수 없습니다. 이메일 또는 멤버를 확인해주세요.";
-  if (message.includes("409") || message.includes("already")) return "이미 프로젝트 멤버로 등록된 사용자입니다.";
+  if (message.includes("409") || message.includes("already")) return "이미 멤버이거나 대기 중인 초대가 있습니다.";
   return message;
 };
 
@@ -50,7 +51,7 @@ export function MemberManagementPanel({ projectId }: { projectId: string }) {
     try {
       setIsSubmitting(true);
       setError(null);
-      await addProjectMember(projectId, email.trim());
+      await createProjectInvitation(projectId, email.trim());
       setEmail("");
       await loadMembers();
     } catch (addError) {
@@ -89,7 +90,7 @@ export function MemberManagementPanel({ projectId }: { projectId: string }) {
             className="inline-flex h-9 items-center gap-1 rounded-lg border border-white/15 bg-white/5 px-3 text-xs text-on-surface transition hover:bg-white/10 disabled:opacity-60"
           >
             <UserPlus className="h-3.5 w-3.5" />
-            추가
+            초대
           </button>
         </form>
       ) : (

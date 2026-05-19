@@ -8,6 +8,7 @@ import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { EmptyState } from "@/components/dashboard/EmptyState";
 import { ProjectCard } from "@/components/dashboard/ProjectCard";
 import { StatsCard } from "@/components/dashboard/StatsCard";
+import { InvitationPanel } from "@/components/dashboard/InvitationPanel";
 import { ProjectItem } from "@/components/dashboard/types";
 import { getProjects } from "@/lib/api/projectApi";
 
@@ -72,6 +73,8 @@ export default function DashboardPage() {
   return (
     <DashboardLayout>
       <DashboardHeader />
+
+      <InvitationPanel />
 
       <section className="mb-7 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {STATS.map((stat) => (

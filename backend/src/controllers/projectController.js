@@ -87,35 +87,6 @@ export const getProjectMembers = async (req, res) => {
   }
 };
 
-export const addProjectMember = async (req, res) => {
-  const { projectId } = req.params;
-  const { email } = req.body;
-
-  if (!email || !String(email).trim()) return res.status(400).json({ success: false, message: 'invalid request' });
-
-  try {
-    const project = await Project.findById(projectId);
-    if (!project) return res.status(404).json({ success: false, message: 'project not found' });
-    if (project.createdBy !== req.user?.userId) return res.status(403).json({ success: false, message: 'forbidden' });
-
-    const user = await User.findOne({ email: String(email).toLowerCase().trim() });
-    if (!user) return res.status(404).json({ success: false, message: 'user not found' });
-
-    const userId = user._id.toString();
-    if (project.members.includes(userId)) {
-      return res.status(409).json({ success: false, message: 'already member' });
-    }
-
-    project.members.push(userId);
-    project.memberCount = project.members.length;
-    await project.save();
-
-    return res.status(200).json({ success: true, data: { _id: userId, name: user.name, email: user.email } });
-  } catch (error) {
-    return handleError(res, error);
-  }
-};
-
 export const removeProjectMember = async (req, res) => {
   const { projectId, userId } = req.params;
 

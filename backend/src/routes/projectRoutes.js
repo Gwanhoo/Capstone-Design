@@ -1,6 +1,5 @@
 import { Router } from 'express';
 import {
-  addProjectMember,
   createProject,
   getProjectById,
   getProjectMembers,
@@ -15,7 +14,6 @@ router.get('/projects', authMiddleware, getProjects);
 router.get('/projects/:projectId', authMiddleware, getProjectById);
 router.post('/projects', authMiddleware, createProject);
 router.get('/projects/:projectId/members', authMiddleware, getProjectMembers);
-router.post('/projects/:projectId/members', authMiddleware, addProjectMember);
 router.delete('/projects/:projectId/members/:userId', authMiddleware, removeProjectMember);
 
 export default router;

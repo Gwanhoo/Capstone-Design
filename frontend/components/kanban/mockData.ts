@@ -1,4 +1,4 @@
-import { ChatMessage, KanbanColumnType, Task } from "./types";
+import { KanbanColumnType, Task } from "./types";
 
 export const initialTasks: Record<string, Task> = {
   "task-1": {
@@ -69,8 +69,3 @@ export const initialColumns: KanbanColumnType[] = [
   { id: "done", title: "완료", tone: "tertiary", taskIds: ["task-4"] },
 ];
 
-export const initialMessages: ChatMessage[] = [
-  { id: "msg-1", sender: "이민지", time: "오후 2:30", message: "API 연동 스펙 문서 업데이트 완료했습니다. 리뷰 부탁드려요!", type: "team" },
-  { id: "msg-2", sender: "나", time: "오후 2:31", message: "확인할게요. 백로그 우선순위도 같이 맞춰보겠습니다.", type: "mine" },
-  { id: "msg-3", sender: "AI 어시스턴트", time: "오후 2:33", message: "채팅 내용을 분석하여 'API 연동 확인' 업무를 백로그에 추가할까요?", type: "ai" },
-];
