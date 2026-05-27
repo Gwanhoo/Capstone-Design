@@ -57,23 +57,23 @@
 
 ```mermaid
 flowchart LR
-  C[Next.js Client]
-  R[Express Server\nREST API]
-  S[Socket.io Gateway]
-  DB[(MongoDB)]
-  O[OpenAI API]
+  C["Next.js Client"]
+  R["Express Server<br/>REST API"]
+  S["Socket.io Gateway"]
+  DB[("MongoDB")]
+  O["OpenAI API"]
 
-  C -->|HTTP/JSON| R
-  C <-->|Socket Event| S
+  C -->|"HTTP / JSON"| R
+  C <-->|"Socket Event"| S
   R --> DB
   S --> DB
-  R -->|AI 요청(확장 지점)| O
+  R -->|"AI Request"| O
 
-  subgraph Models
-    P[Project]
-    T[Task]
-    M[Member(User)]
-    MSG[Message(ChatMessage)]
+  subgraph ModelLayer["Models"]
+    P["Project"]
+    T["Task"]
+    M["Member / User"]
+    MSG["Message / ChatMessage"]
   end
 
   DB --- P
@@ -91,16 +91,16 @@ sequenceDiagram
   participant DB as MongoDB
   participant ClientB as Next.js Client B
 
-  Note over ClientA,ClientB: projectId 기반 Room: project:{projectId}
+  Note over ClientA,ClientB: projectId Room = project projectId
 
-  ClientA->>API: PATCH /api/tasks/:taskId (x-socket-id 포함)
-  API->>DB: Task 업데이트
-  API-->>ClientA: 200 OK + 최신 Task
-  API->>Socket: task:updated emit (except origin socket)
-  Socket-->>ClientB: task:updated
+  ClientA->>API: PATCH /api/tasks/taskId with x-socket-id
+  API->>DB: Update Task
+  API-->>ClientA: 200 OK with latest Task
+  API->>Socket: Emit task updated except origin socket
+  Socket-->>ClientB: Receive task updated
 
-  ClientA->>Socket: join-project({ projectId })
-  ClientB->>Socket: join-project({ projectId })
+  ClientA->>Socket: join project with projectId
+  ClientB->>Socket: join project with projectId
   Socket-->>ClientA: ack ok
   Socket-->>ClientB: ack ok
 ```
