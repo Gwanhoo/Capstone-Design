@@ -186,6 +186,7 @@ export function useKanbanBoard(projectId: string) {
     } catch (createError) {
       console.error(createError);
       setError("카드 생성에 실패했습니다.");
+      throw createError;
     }
   };
 
@@ -220,11 +221,5 @@ export function useKanbanBoard(projectId: string) {
     }
   };
 
-  const addAiGeneratedTask = async () => {
-    const samples = ["API 응답 구조 검토", "실시간 동기화 예외 처리", "작업 우선순위 자동 분류 개선"];
-    const title = samples[Math.floor(Math.random() * samples.length)];
-    await createTask("todo", { title, description: "AI 분석으로 생성된 추천 작업입니다.", priority: "높음", assignee: "AI 추천", dueDate: "2026.05.20" });
-  };
-
-  return { orderedColumns, tasks, dragMeta, dropColumnId, setDropColumnId, startDrag, moveTask, createTask, updateTask, deleteTask, addAiGeneratedTask, isLoading, error };
+  return { orderedColumns, tasks, dragMeta, dropColumnId, setDropColumnId, startDrag, moveTask, createTask, updateTask, deleteTask, isLoading, error };
 }
