@@ -13,28 +13,42 @@ export type ProjectChatMessage = {
   updatedAt: string;
 };
 
+type BackendSender =
+  | string
+  | {
+      _id?: string;
+      id?: string;
+      name?: string;
+      email?: string;
+    };
+
 type BackendMessage = {
-  _id: string;
+  _id?: string;
+  id?: string;
   projectId: string;
   content: string;
-  sender: {
-    _id: string;
-    name: string;
-    email: string;
-  };
+  sender: BackendSender;
   createdAt: string;
   updatedAt: string;
 };
 
-const mapMessage = (message: BackendMessage): ProjectChatMessage => ({
-  id: message._id,
+const normalizeSender = (sender: BackendSender): ProjectChatMessage["sender"] => {
+  if (typeof sender === "string") {
+    return { id: sender, name: "알 수 없음", email: "" };
+  }
+
+  return {
+    id: String(sender?._id ?? sender?.id ?? ""),
+    name: sender?.name ?? "알 수 없음",
+    email: sender?.email ?? "",
+  };
+};
+
+export const mapMessage = (message: BackendMessage): ProjectChatMessage => ({
+  id: String(message._id ?? message.id ?? ""),
   projectId: message.projectId,
   content: message.content,
-  sender: {
-    id: message.sender._id,
-    name: message.sender.name,
-    email: message.sender.email,
-  },
+  sender: normalizeSender(message.sender),
   createdAt: message.createdAt,
   updatedAt: message.updatedAt,
 });

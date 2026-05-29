@@ -95,3 +95,33 @@ export const removeProjectMember = async (projectId: string, userId: string) => 
     method: "DELETE",
   });
 };
+
+export type ProjectColumn = {
+  id: string;
+  title: string;
+  order: number;
+};
+
+export const getProjectColumns = async (projectId: string) => {
+  return apiRequest<ProjectColumn[]>(`/api/projects/${projectId}/columns`);
+};
+
+export const createProjectColumn = async (projectId: string, title: string) => {
+  return apiRequest<ProjectColumn>(`/api/projects/${projectId}/columns`, {
+    method: "POST",
+    body: JSON.stringify({ title }),
+  });
+};
+
+export const updateProjectColumn = async (projectId: string, columnId: string, title: string) => {
+  return apiRequest<ProjectColumn>(`/api/projects/${projectId}/columns/${columnId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ title }),
+  });
+};
+
+export const deleteProjectColumn = async (projectId: string, columnId: string) => {
+  await apiRequest(`/api/projects/${projectId}/columns/${columnId}`, {
+    method: "DELETE",
+  });
+};
