@@ -5,7 +5,7 @@ import { Send } from "lucide-react";
 import { ChatMessage } from "./ChatMessage";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { getSocket } from "@/lib/socket/client";
-import { getProjectMessages, ProjectChatMessage, sendProjectMessage } from "@/lib/api/chatApi";
+import { getProjectMessages, mapMessage, ProjectChatMessage, sendProjectMessage } from "@/lib/api/chatApi";
 
 const formatTime = (iso: string) => {
   const date = new Date(iso);
@@ -49,10 +49,11 @@ export function TeamChatPanel({ projectId }: { projectId: string }) {
 
   useEffect(() => {
     const socket = getSocket();
-    const onChatMessage = (message: ProjectChatMessage) => {
+    const onChatMessage = (rawMessage: unknown) => {
+      const message = mapMessage(rawMessage as Parameters<typeof mapMessage>[0]);
       if (message.projectId !== projectId) return;
       setMessages((prev) => {
-        if (prev.some((item) => item.id === message.id)) return prev;
+        if (prev.some((item) => item.id === message.id)) return prev.map((item) => (item.id === message.id ? message : item));
         return [...prev, message];
       });
       scrollToBottom();
@@ -97,7 +98,7 @@ export function TeamChatPanel({ projectId }: { projectId: string }) {
               sender: message.sender.name,
               time: formatTime(message.createdAt),
               message: message.content,
-              type: message.sender.id === user?.id ? "mine" : "team",
+              type: String(message.sender.id) === String(user?.id) ? "mine" : "team",
             }}
           />
         ))}

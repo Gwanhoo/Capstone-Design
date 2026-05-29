@@ -11,7 +11,6 @@ const taskDecompositionSchema = {
   properties: {
     tasks: {
       type: 'array',
-      minItems: 3,
       items: {
         type: 'object',
         additionalProperties: false,
@@ -110,9 +109,23 @@ const parseStructuredResponse = (response) => {
   }
 };
 
-export async function decomposeProject(projectTitle, projectDescription) {
+const normalizeExistingTasks = (existingTasks) => {
+  if (!Array.isArray(existingTasks)) return [];
+
+  return existingTasks
+    .map((task) => ({
+      title: typeof task?.title === 'string' ? task.title.trim() : '',
+      status: typeof task?.status === 'string' ? task.status.trim() : 'unknown',
+    }))
+    .filter((task) => task.title)
+    .slice(0, 100);
+};
+
+export async function decomposeProject(projectTitle, projectDescription, options = {}) {
   const title = typeof projectTitle === 'string' ? projectTitle.trim() : '';
   const description = typeof projectDescription === 'string' ? projectDescription.trim() : '';
+  const prompt = typeof options.prompt === 'string' ? options.prompt.trim() : '';
+  const existingTasks = normalizeExistingTasks(options.existingTasks);
 
   if (!title || !description) {
     const error = new Error('프로젝트 제목과 설명은 필수입니다.');
@@ -132,11 +145,31 @@ export async function decomposeProject(projectTitle, projectDescription) {
             '당신은 소프트웨어 캡스톤 프로젝트를 실행 가능한 칸반 작업으로 분해하는 프로젝트 매니저입니다.',
             '반드시 JSON 스키마를 준수하고, 각 작업은 바로 Todo 컬럼에 추가 가능한 수준으로 구체화하세요.',
             '작업 제목과 설명은 한국어로 작성하고, priority는 low, medium, high, urgent 중 하나만 사용하세요.',
+            '이미 존재하거나 완료된 작업, 그리고 기존 작업과 제목/의미가 유사한 작업은 절대 다시 추천하지 마세요.',
           ].join(' '),
         },
         {
           role: 'user',
-          content: `프로젝트명:\n${title}\n\n설명:\n${description}\n\n요구사항:\n- 핵심 기능을 3~12개의 독립적인 작업으로 분해하세요.\n- 구현 순서와 중요도를 고려해 priority를 지정하세요.\n- 응답은 스키마에 맞는 JSON 객체만 반환하세요.`,
+          content: `프로젝트명:
+${title}
+
+설명:
+${description}
+
+사용자 추가 요청:
+${prompt || '추가 요청 없음'}
+
+기존 작업 목록(Todo/In Progress/Done 전체, 중복 추천 금지):
+${JSON.stringify(existingTasks, null, 2)}
+
+요구사항:
+- 프로젝트 정보, 사용자 추가 요청, 기존 작업 목록을 모두 참고하세요.
+- 이미 존재하는 작업은 다시 추천하지 마세요.
+- status가 done인 완료 작업은 다시 추천하지 마세요.
+- 유사한 제목이나 같은 의미의 작업도 중복 추천하지 마세요.
+- 새로 필요한 핵심 기능을 최대 12개의 독립적인 작업으로 분해하세요. 중복을 제외하면 추천할 작업이 없을 수 있습니다.
+- 구현 순서와 중요도를 고려해 priority를 지정하세요.
+- 응답은 스키마에 맞는 JSON 객체만 반환하세요.`,
         },
       ],
       text: {

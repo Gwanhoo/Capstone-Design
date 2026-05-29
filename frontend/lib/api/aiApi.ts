@@ -8,11 +8,23 @@ export type AiGeneratedTask = {
   priority: AiTaskPriority;
 };
 
+export type ExistingAiTask = {
+  title: string;
+  status: string;
+};
+
+type DecomposePayload = {
+  projectTitle: string;
+  projectDescription: string;
+  prompt?: string;
+  existingTasks?: ExistingAiTask[];
+};
+
 type DecomposeResponse = {
   tasks: AiGeneratedTask[];
 };
 
-export const decomposeProjectTasks = async (payload: { projectTitle: string; projectDescription: string }) => {
+export const decomposeProjectTasks = async (payload: DecomposePayload) => {
   return apiRequest<DecomposeResponse>("/api/ai/decompose", {
     method: "POST",
     body: JSON.stringify(payload),

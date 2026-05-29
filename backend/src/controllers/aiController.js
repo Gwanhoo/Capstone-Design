@@ -6,10 +6,10 @@ import {
 } from '../services/openAiService.js';
 
 export const decomposeProjectTasks = async (req, res) => {
-  const { projectTitle, projectDescription } = req.body;
+  const { projectTitle, projectDescription, prompt, existingTasks } = req.body;
 
   try {
-    const data = await decomposeProject(projectTitle, projectDescription);
+    const data = await decomposeProject(projectTitle, projectDescription, { prompt, existingTasks });
 
     return res.status(200).json({
       success: true,

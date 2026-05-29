@@ -10,6 +10,8 @@ import { TeamChatPanel } from "./TeamChatPanel";
 import { MemberManagementPanel } from "./MemberManagementPanel";
 import { useKanbanBoard } from "./useKanbanBoard";
 import { AiTaskPreviewModal } from "./AiTaskPreviewModal";
+import { AiTaskPromptModal } from "./AiTaskPromptModal";
+import { ColumnCreateModal } from "./ColumnCreateModal";
 
 const priorityToFrontend: Record<AiGeneratedTask["priority"], "긴급" | "높음" | "보통" | "낮음"> = {
   urgent: "긴급",
@@ -24,7 +26,10 @@ export function KanbanLayout({ projectId }: { projectId: string }) {
   const [isProjectLoading, setIsProjectLoading] = useState(true);
   const [projectError, setProjectError] = useState<string | null>(null);
   const [aiTasks, setAiTasks] = useState<AiGeneratedTask[]>([]);
+  const [isAiPromptOpen, setIsAiPromptOpen] = useState(false);
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+  const [isColumnModalOpen, setIsColumnModalOpen] = useState(false);
+  const [isColumnCreating, setIsColumnCreating] = useState(false);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [isAiAdding, setIsAiAdding] = useState(false);
   const [aiMessage, setAiMessage] = useState<string | null>(null);
@@ -47,7 +52,12 @@ export function KanbanLayout({ projectId }: { projectId: string }) {
     loadProject();
   }, [projectId]);
 
-  const handleGenerateAiTasks = async () => {
+  const existingTasks = () => Object.values(board.tasks).map((task) => ({
+    title: task.title,
+    status: task.columnId,
+  }));
+
+  const handleGenerateAiTasks = async (prompt: string) => {
     if (!project) {
       setAiError("프로젝트 정보를 불러온 뒤 다시 시도해주세요.");
       return;
@@ -60,8 +70,11 @@ export function KanbanLayout({ projectId }: { projectId: string }) {
       const result = await decomposeProjectTasks({
         projectTitle: project.name,
         projectDescription: project.description || project.name,
+        prompt,
+        existingTasks: existingTasks(),
       });
       setAiTasks(result.tasks);
+      setIsAiPromptOpen(false);
       setIsAiModalOpen(true);
       setAiMessage(`AI 작업 ${result.tasks.length}개가 생성되었습니다.`);
     } catch (error) {
@@ -70,6 +83,18 @@ export function KanbanLayout({ projectId }: { projectId: string }) {
       setAiMessage(null);
     } finally {
       setIsAiLoading(false);
+    }
+  };
+
+  const handleCreateColumn = async (title: string) => {
+    try {
+      setIsColumnCreating(true);
+      await board.createColumn(title);
+      setIsColumnModalOpen(false);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsColumnCreating(false);
     }
   };
 
@@ -102,7 +127,7 @@ export function KanbanLayout({ projectId }: { projectId: string }) {
       <ProjectSidebar />
       <div className="flex min-w-0 flex-1 flex-col">
         <KanbanHeader
-          onGenerateAiTask={handleGenerateAiTasks}
+          onGenerateAiTask={() => setIsAiPromptOpen(true)}
           isGeneratingAiTask={isAiLoading}
           projectName={isProjectLoading ? "프로젝트 불러오는 중..." : project?.name || "프로젝트"}
         />
@@ -117,6 +142,7 @@ export function KanbanLayout({ projectId }: { projectId: string }) {
               startDrag={board.startDrag}
               moveTask={board.moveTask}
               createTask={board.createTask}
+              onOpenCreateColumn={() => setIsColumnModalOpen(true)}
               updateTask={board.updateTask}
               deleteTask={board.deleteTask}
             />}
@@ -132,7 +158,9 @@ export function KanbanLayout({ projectId }: { projectId: string }) {
           </div>
         </div>
       </div>
+      {isAiPromptOpen ? <AiTaskPromptModal isGenerating={isAiLoading} onClose={() => setIsAiPromptOpen(false)} onSubmit={handleGenerateAiTasks} /> : null}
       {isAiModalOpen ? <AiTaskPreviewModal tasks={aiTasks} isAdding={isAiAdding} onClose={() => setIsAiModalOpen(false)} onAddAll={handleAddAllAiTasks} /> : null}
+      {isColumnModalOpen ? <ColumnCreateModal isCreating={isColumnCreating} onClose={() => setIsColumnModalOpen(false)} onCreate={handleCreateColumn} /> : null}
     </div>
   );
 }

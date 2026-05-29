@@ -24,6 +24,6 @@ export function KanbanColumn({ column, tasks, onDropTask, onDragTask, activeTask
       <button onClick={() => setAdding((v) => !v)} className="rounded-md p-1 text-outline transition hover:bg-white/10 hover:text-on-surface"><Plus className="h-4 w-4" /></button>
     </div>
     {adding && <div className="mb-3 rounded-xl border border-white/10 bg-black/20 p-3"><TaskForm onCancel={() => setAdding(false)} onSubmit={(payload) => { onAddTask(column.id, payload); setAdding(false); }} /></div>}
-    <div className="space-y-3">{tasks.map((task, index) => <div key={task.id} draggable onDragStart={() => onDragTask(task.id, column.id, index)} onDragOver={(e) => e.preventDefault()} onDrop={() => onDropTask(column.id, index)}><TaskCard task={task} isDragging={activeTaskId === task.id} onClick={() => onOpenTask(task.id)} onDelete={() => onDeleteTask(task.id)} /></div>)}</div>
+    <div className="space-y-3">{tasks.map((task, index) => <div key={task.id} draggable onDragStart={() => onDragTask(task.id, column.id, index)} onDragOver={(e) => e.preventDefault()} onDrop={(event) => { event.stopPropagation(); onDropTask(column.id, index); }}><TaskCard task={task} isDragging={activeTaskId === task.id} onClick={() => onOpenTask(task.id)} onDelete={() => onDeleteTask(task.id)} /></div>)}</div>
   </section>;
 }
