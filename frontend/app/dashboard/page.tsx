@@ -25,6 +25,13 @@ export default function DashboardPage() {
   const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    const onProjectsRefresh = () => setRefreshKey((value) => value + 1);
+    window.addEventListener("projects:refresh", onProjectsRefresh);
+    return () => window.removeEventListener("projects:refresh", onProjectsRefresh);
+  }, []);
 
   useEffect(() => {
     if (!isAuthLoading && !isAuthenticated) {
@@ -60,7 +67,7 @@ export default function DashboardPage() {
     };
 
     loadProjects();
-  }, [isAuthLoading, isAuthenticated, router, search]);
+  }, [isAuthLoading, isAuthenticated, router, search, refreshKey]);
 
   const hasProjects = useMemo(() => projects.length > 0, [projects]);
   const stats = useMemo(() => {

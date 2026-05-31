@@ -181,6 +181,11 @@ export const removeProjectMember = async (req, res) => {
 const emitColumnEvent = (req, eventName, projectId, payload) => {
   const io = req.app.get('io');
   if (!io) return;
+  const originSocketId = req.headers['x-socket-id'];
+  if (originSocketId) {
+    io.to(getProjectRoomName(projectId)).except(String(originSocketId)).emit(eventName, payload);
+    return;
+  }
   io.to(getProjectRoomName(projectId)).emit(eventName, payload);
 };
 

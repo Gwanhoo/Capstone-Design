@@ -15,12 +15,25 @@ export default function ProjectBacklogPage({ params }: { params: { projectId: st
   const [query, setQuery] = useState("");
   const [columnId, setColumnId] = useState("전체");
   const [priority, setPriority] = useState("전체");
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    Promise.all([getTasksByProject(params.projectId), getProjectColumns(params.projectId)]).then(([taskData, columnData]) => {
-      setTasks(taskData);
-      setColumns(columnData);
-    });
+    const load = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        const [taskData, columnData] = await Promise.all([getTasksByProject(params.projectId), getProjectColumns(params.projectId)]);
+        setTasks(taskData);
+        setColumns(columnData);
+      } catch (_loadError) {
+        setError("백로그를 불러오지 못했습니다.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    load();
   }, [params.projectId]);
 
   const columnTitle = (id: string) => columns.find((column) => column.id === id)?.title ?? id;
@@ -43,15 +56,17 @@ export default function ProjectBacklogPage({ params }: { params: { projectId: st
         </select>
       </div>
       <section className="space-y-3">
-        {filtered.map((task) => (
+        {isLoading ? <p className="rounded-2xl border border-white/10 bg-white/5 p-8 text-sm text-on-surface-variant">백로그를 불러오는 중...</p> : null}
+        {error ? <p className="rounded-2xl border border-red-400/20 bg-red-500/5 p-8 text-sm text-red-300">{error}</p> : null}
+        {!isLoading && !error ? filtered.map((task) => (
           <article key={task.id} className="rounded-2xl border border-white/10 bg-white/5 p-4">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div><h3 className="font-semibold">{task.title}</h3><p className="mt-1 text-sm text-on-surface-variant">{columnTitle(task.columnId)} · {task.priority}</p></div>
               <Link href={`/projects/${params.projectId}/board`} className="rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-sm text-primary">보드로 이동</Link>
             </div>
           </article>
-        ))}
-        {filtered.length === 0 ? <p className="rounded-2xl border border-white/10 bg-white/5 p-8 text-sm text-on-surface-variant">조건에 맞는 작업이 없습니다.</p> : null}
+        )) : null}
+        {!isLoading && !error && filtered.length === 0 ? <p className="rounded-2xl border border-white/10 bg-white/5 p-8 text-sm text-on-surface-variant">조건에 맞는 작업이 없습니다.</p> : null}
       </section>
     </ProjectPageFrame>
   );

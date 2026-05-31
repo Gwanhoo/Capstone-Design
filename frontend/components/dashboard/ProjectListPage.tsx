@@ -23,10 +23,17 @@ export function ProjectListPage({ compact = false }: { compact?: boolean }) {
   const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     if (!isAuthLoading && !isAuthenticated) router.replace("/login");
   }, [isAuthLoading, isAuthenticated, router]);
+
+  useEffect(() => {
+    const onProjectsRefresh = () => setRefreshKey((value) => value + 1);
+    window.addEventListener("projects:refresh", onProjectsRefresh);
+    return () => window.removeEventListener("projects:refresh", onProjectsRefresh);
+  }, []);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -52,7 +59,7 @@ export function ProjectListPage({ compact = false }: { compact?: boolean }) {
     }, 250);
 
     return () => window.clearTimeout(timeoutId);
-  }, [isAuthenticated, search]);
+  }, [isAuthenticated, search, refreshKey]);
 
   const hasProjects = useMemo(() => projects.length > 0, [projects]);
 
