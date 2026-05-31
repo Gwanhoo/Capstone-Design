@@ -12,12 +12,6 @@ import { InvitationPanel } from "@/components/dashboard/InvitationPanel";
 import { ProjectItem } from "@/components/dashboard/types";
 import { getProjects } from "@/lib/api/projectApi";
 
-const STATS = [
-  { title: "진행중 프로젝트", value: "12", note: "지난주 대비 +2" },
-  { title: "완료된 작업", value: "84", note: "이번 주 누적" },
-  { title: "AI 추천 작업", value: "19", note: "우선순위 높음 6건" },
-];
-
 const formatDate = (iso: string) => {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "-";
@@ -31,6 +25,13 @@ export default function DashboardPage() {
   const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    const onProjectsRefresh = () => setRefreshKey((value) => value + 1);
+    window.addEventListener("projects:refresh", onProjectsRefresh);
+    return () => window.removeEventListener("projects:refresh", onProjectsRefresh);
+  }, []);
 
   useEffect(() => {
     if (!isAuthLoading && !isAuthenticated) {
@@ -52,8 +53,7 @@ export default function DashboardPage() {
             id: project.id,
             name: project.name,
             description: project.description || "프로젝트 설명이 없습니다.",
-            status: project.status === "archived" ? "완료" : "진행중",
-            progress: project.status === "archived" ? 100 : 0,
+            status: project.status === "archived" ? "보관됨" : "진행중",
             members: project.memberCount,
             updatedAt: formatDate(project.updatedAt),
           })),
@@ -67,9 +67,19 @@ export default function DashboardPage() {
     };
 
     loadProjects();
-  }, [isAuthLoading, isAuthenticated, router, search]);
+  }, [isAuthLoading, isAuthenticated, router, search, refreshKey]);
 
   const hasProjects = useMemo(() => projects.length > 0, [projects]);
+  const stats = useMemo(() => {
+    const activeCount = projects.filter((project) => project.status === "진행중").length;
+    const archivedCount = projects.filter((project) => project.status === "보관됨").length;
+
+    return [
+      { title: "전체 프로젝트", value: String(projects.length), note: "현재 조회된 프로젝트" },
+      { title: "진행중 프로젝트", value: String(activeCount), note: "활성 상태 프로젝트" },
+      { title: "보관된 프로젝트", value: String(archivedCount), note: "보관 상태 프로젝트" },
+    ];
+  }, [projects]);
 
   return (
     <DashboardLayout>
@@ -78,7 +88,7 @@ export default function DashboardPage() {
       <InvitationPanel />
 
       <section className="mb-7 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {STATS.map((stat) => (
+        {stats.map((stat) => (
           <StatsCard key={stat.title} {...stat} />
         ))}
       </section>

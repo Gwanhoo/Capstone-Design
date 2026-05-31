@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import Task from '../models/Task.js';
 import { findAccessibleProject } from '../utils/projectAccess.js';
 import { getProjectRoomName } from '../sockets/index.js';
+import { DEFAULT_COLUMNS } from '../services/projectColumnService.js';
 
 
 const emitTaskEvent = (req, eventName, projectId, payload) => {
@@ -74,10 +75,22 @@ export const createTask = async (req, res) => {
 
 const getAuthorizedTask = async (taskId, userId) => {
   const task = await Task.findById(taskId);
-  if (!task) return { task: null, allowed: false, notFound: true };
+  if (!task) return { task: null, project: null, allowed: false, notFound: true };
   const { project, allowed } = await findAccessibleProject(task.projectId, userId);
-  if (!project) return { task: null, allowed: false, notFound: true };
-  return { task, allowed, notFound: false };
+  if (!project) return { task: null, project: null, allowed: false, notFound: true };
+  return { task, project, allowed, notFound: false };
+};
+
+const getProjectColumnIds = (project) => new Set(
+  (Array.isArray(project.columns) && project.columns.length > 0 ? project.columns : DEFAULT_COLUMNS)
+    .map((column) => String(column.id)),
+);
+
+const normalizeOrder = (value, fallback = 0) => {
+  if (value === undefined) return fallback;
+  const numberValue = Number(value);
+  if (!Number.isFinite(numberValue)) return fallback;
+  return Math.max(0, Math.floor(numberValue));
 };
 
 export const updateTask = async (req, res) => {
@@ -141,21 +154,43 @@ export const moveTask = async (req, res) => {
     if (auth.notFound) return res.status(404).json({ success: false, message: 'task not found' });
     if (!auth.allowed) return res.status(403).json({ success: false, message: 'forbidden' });
 
-    const payload = {};
-
-    if (columnId !== undefined) {
-      payload.columnId = columnId;
+    const targetColumnId = columnId !== undefined ? String(columnId) : auth.task.columnId;
+    if (!getProjectColumnIds(auth.project).has(targetColumnId)) {
+      return res.status(400).json({ success: false, message: 'invalid column' });
     }
 
-    if (order !== undefined) {
-      payload.order = order;
-    }
+    const targetOrder = normalizeOrder(order, auth.task.order ?? 0);
+    const allTasks = await Task.find({ projectId: auth.task.projectId }).sort({ columnId: 1, order: 1, createdAt: 1 });
+    const grouped = new Map();
 
-    const task = await Task.findByIdAndUpdate(taskId, payload, {
-      new: true,
-      runValidators: true,
+    allTasks.forEach((task) => {
+      if (String(task._id) === String(auth.task._id)) return;
+      const key = task.columnId;
+      grouped.set(key, [...(grouped.get(key) || []), task]);
     });
 
+    const targetTasks = grouped.get(targetColumnId) || [];
+    targetTasks.splice(Math.min(targetOrder, targetTasks.length), 0, auth.task);
+    grouped.set(targetColumnId, targetTasks);
+
+    const columnsToNormalize = new Set([auth.task.columnId, targetColumnId]);
+    const operations = [];
+
+    columnsToNormalize.forEach((currentColumnId) => {
+      (grouped.get(currentColumnId) || []).forEach((task, index) => {
+        operations.push({
+          updateOne: {
+            filter: { _id: task._id },
+            update: { $set: { columnId: currentColumnId, order: index } },
+            runValidators: true,
+          },
+        });
+      });
+    });
+
+    if (operations.length > 0) await Task.bulkWrite(operations);
+
+    const task = await Task.findById(taskId);
     emitTaskEvent(req, 'task:moved', task.projectId, task);
 
     return res.status(200).json({

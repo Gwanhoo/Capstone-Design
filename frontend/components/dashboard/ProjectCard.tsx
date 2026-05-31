@@ -4,8 +4,7 @@ import { ProjectItem } from "./types";
 
 const statusStyle = {
   진행중: "bg-primary/20 text-primary",
-  완료: "bg-emerald-400/20 text-emerald-300",
-  대기중: "bg-amber-400/20 text-amber-300"
+  보관됨: "bg-emerald-400/20 text-emerald-300",
 };
 
 export function ProjectCard({ project }: { project: ProjectItem }) {
@@ -18,16 +17,6 @@ export function ProjectCard({ project }: { project: ProjectItem }) {
         <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusStyle[project.status]}`}>{project.status}</span>
       </div>
       <p className="mt-3 min-h-12 text-sm leading-relaxed text-on-surface-variant">{project.description}</p>
-
-      <div className="mt-5">
-        <div className="mb-1.5 flex items-center justify-between text-xs text-outline">
-          <span>진행률</span>
-          <span>{project.progress}%</span>
-        </div>
-        <div className="h-2 rounded-full bg-white/10">
-          <div className="h-full rounded-full bg-[linear-gradient(90deg,#c3c0ff_0%,#4f46e5_100%)]" style={{ width: `${project.progress}%` }} />
-        </div>
-      </div>
 
       <div className="mt-5 flex items-center justify-between border-t border-white/10 pt-4 text-xs text-on-surface-variant">
         <span className="flex items-center gap-1.5"><Users className="h-3.5 w-3.5" /> {project.members}명</span>

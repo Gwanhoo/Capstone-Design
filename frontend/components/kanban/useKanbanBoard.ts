@@ -30,8 +30,6 @@ const mapSocketTask = (task: SocketTask): Task => ({
   assignee: task.assignee,
   assigneeInitial: task.assignee.slice(0, 2) || "-",
   progress: task.progress,
-  comments: 0,
-  attachments: 0,
   dueDate: formatDueDate(task.dueDate),
   aiStatus: task.aiStatus,
   priority: priorityToFrontend[task.priority] ?? "보통",
@@ -47,6 +45,16 @@ const mapColumn = (column: ProjectColumn, index: number): KanbanColumnType => ({
 });
 
 const uniqueTaskIds = (taskIds: string[]) => Array.from(new Set(taskIds));
+
+const sortTaskIdsByOrder = (taskIds: string[], tasks: Record<string, Task>) =>
+  uniqueTaskIds(taskIds).sort((a, b) => {
+    const orderDiff = (tasks[a]?.order ?? 0) - (tasks[b]?.order ?? 0);
+    if (orderDiff !== 0) return orderDiff;
+    const aDate = new Date(tasks[a]?.updatedAt || tasks[a]?.createdAt || 0).getTime();
+    const bDate = new Date(tasks[b]?.updatedAt || tasks[b]?.createdAt || 0).getTime();
+    if (aDate !== bDate) return aDate - bDate;
+    return a.localeCompare(b);
+  });
 
 const insertTaskIntoColumns = (columns: KanbanColumnType[], taskId: string, targetColumnId: string, targetIndex?: number) => {
   const withoutTask = columns.map((column) => ({ ...column, taskIds: column.taskIds.filter((id) => id !== taskId) }));
@@ -71,7 +79,7 @@ const mergeTasksIntoColumns = (columns: KanbanColumnType[], tasks: Record<string
 
   return columns.map((column) => ({
     ...column,
-    taskIds: uniqueTaskIds(columnMap[column.id] ?? []).sort((a, b) => (tasks[a]?.order ?? 0) - (tasks[b]?.order ?? 0)),
+    taskIds: sortTaskIdsByOrder(columnMap[column.id] ?? [], tasks),
   }));
 };
 
@@ -185,14 +193,22 @@ export function useKanbanBoard(projectId: string) {
 
     const movedTaskId = dragMeta.taskId;
     const target = columns.find((column) => column.id === targetColumnId);
+    if (!target || !tasks[movedTaskId]) {
+      setDragMeta(null);
+      setDropColumnId(null);
+      setError("이동할 열 또는 카드를 찾지 못했습니다.");
+      return;
+    }
+
+    const prevTasks = tasks;
+    const prevColumns = columns;
     const source = columns.find((column) => column.id === dragMeta.fromColumnId);
-    const targetIdsWithoutTask = target?.taskIds.filter((id) => id !== movedTaskId) ?? [];
+    const targetIdsWithoutTask = target.taskIds.filter((id) => id !== movedTaskId);
     let insertIndex = targetIndex ?? targetIdsWithoutTask.length;
-    if (source?.id === target?.id && typeof targetIndex === "number" && targetIndex > dragMeta.fromIndex) insertIndex -= 1;
+    if (source?.id === target.id && typeof targetIndex === "number" && targetIndex > dragMeta.fromIndex) insertIndex -= 1;
     const movedOrder = Math.max(0, Math.min(insertIndex, targetIdsWithoutTask.length));
 
     setColumns((prev) => insertTaskIntoColumns(prev, movedTaskId, targetColumnId, movedOrder));
-
     setTasks((prev) => ({ ...prev, [movedTaskId]: { ...prev[movedTaskId], columnId: targetColumnId, order: movedOrder } }));
     setDragMeta(null);
     setDropColumnId(null);
@@ -203,7 +219,9 @@ export function useKanbanBoard(projectId: string) {
       setColumns((prev) => insertTaskIntoColumns(prev, movedTaskId, moved.columnId, moved.order));
     } catch (moveError) {
       console.error(moveError);
-      setError("카드 이동 반영에 실패했습니다.");
+      setError("카드 이동 반영에 실패했습니다. 이전 위치로 되돌렸습니다.");
+      setTasks(prevTasks);
+      setColumns(prevColumns);
     }
   };
 
@@ -237,13 +255,20 @@ export function useKanbanBoard(projectId: string) {
   };
 
   const updateTask = async (taskId: string, partial: Partial<Task>) => {
+    const previousTask = tasks[taskId];
+    if (!previousTask) {
+      setError("수정할 카드를 찾지 못했습니다.");
+      return;
+    }
+
     setTasks((prev) => ({ ...prev, [taskId]: { ...prev[taskId], ...partial } }));
     try {
       const updated = await updateTaskApi(taskId, partial);
       setTasks((prev) => ({ ...prev, [taskId]: { ...prev[taskId], ...updated } }));
     } catch (updateError) {
       console.error(updateError);
-      setError("카드 수정에 실패했습니다.");
+      setError("카드 수정에 실패했습니다. 이전 내용으로 되돌렸습니다.");
+      setTasks((prev) => ({ ...prev, [taskId]: previousTask }));
     }
   };
 

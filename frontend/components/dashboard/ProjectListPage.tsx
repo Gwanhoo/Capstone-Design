@@ -23,10 +23,17 @@ export function ProjectListPage({ compact = false }: { compact?: boolean }) {
   const [search, setSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     if (!isAuthLoading && !isAuthenticated) router.replace("/login");
   }, [isAuthLoading, isAuthenticated, router]);
+
+  useEffect(() => {
+    const onProjectsRefresh = () => setRefreshKey((value) => value + 1);
+    window.addEventListener("projects:refresh", onProjectsRefresh);
+    return () => window.removeEventListener("projects:refresh", onProjectsRefresh);
+  }, []);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -39,8 +46,7 @@ export function ProjectListPage({ compact = false }: { compact?: boolean }) {
           id: project.id,
           name: project.name,
           description: project.description || "프로젝트 설명이 없습니다.",
-          status: project.status === "archived" ? "완료" : "진행중",
-          progress: project.status === "archived" ? 100 : 0,
+          status: project.status === "archived" ? "보관됨" : "진행중",
           members: project.memberCount,
           updatedAt: formatDate(project.updatedAt),
         })));
@@ -53,7 +59,7 @@ export function ProjectListPage({ compact = false }: { compact?: boolean }) {
     }, 250);
 
     return () => window.clearTimeout(timeoutId);
-  }, [isAuthenticated, search]);
+  }, [isAuthenticated, search, refreshKey]);
 
   const hasProjects = useMemo(() => projects.length > 0, [projects]);
 

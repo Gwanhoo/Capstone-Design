@@ -64,10 +64,6 @@ export default function ProjectSettingsPage({ params }: { params: { projectId: s
             <input value={inviteEmail} onChange={(event) => setInviteEmail(event.target.value)} className="mt-3 h-10 w-full rounded-xl border border-white/10 bg-surface-container-lowest px-3 text-sm" placeholder="email@example.com" />
             <button onClick={invite} type="button" className="mt-3 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-sm text-primary">초대 보내기</button>
           </section>
-          <section className="rounded-2xl border border-red-400/20 bg-red-500/5 p-5">
-            <h2 className="font-semibold text-red-200">위험 구역</h2>
-            <button disabled className="mt-3 rounded-xl border border-red-400/30 px-3 py-2 text-sm text-red-200 opacity-60">프로젝트 삭제 (준비 중)</button>
-          </section>
         </aside>
       </div>
     </ProjectPageFrame>
