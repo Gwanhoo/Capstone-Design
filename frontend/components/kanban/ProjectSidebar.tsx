@@ -12,7 +12,7 @@ const menus = [
   { label: "설정", path: "settings", icon: Settings },
 ];
 
-export function ProjectSidebar({ projectId, projectName = "AI 협업 칸반 프로젝트" }: { projectId: string; projectName?: string }) {
+export function ProjectSidebar({ projectId, projectName = "프로젝트" }: { projectId: string; projectName?: string }) {
   const pathname = usePathname();
 
   return (

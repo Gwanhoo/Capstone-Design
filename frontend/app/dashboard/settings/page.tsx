@@ -13,7 +13,6 @@ export default function DashboardSettingsPage() {
   const [theme, setTheme] = useState("dark");
 
   useEffect(() => {
-    // TODO: 사용자 설정 저장 API가 추가되면 localStorage 대신 서버 설정을 사용합니다.
     setNotifications(localStorage.getItem("kanban-ai:notifications") !== "false");
     setTheme(localStorage.getItem("kanban-ai:theme") || "dark");
   }, []);

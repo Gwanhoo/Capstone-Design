@@ -30,8 +30,6 @@ const mapTaskFromBackend = (task: BackendTask): Task => ({
   assignee: task.assignee,
   assigneeInitial: task.assignee.slice(0, 2) || "-",
   progress: task.progress,
-  comments: 0,
-  attachments: 0,
   dueDate: formatDueDate(task.dueDate),
   aiStatus: task.aiStatus,
   priority: priorityToFrontend[task.priority] ?? "보통",
