@@ -9,8 +9,8 @@ export type Task = {
   assignee: string;
   assigneeInitial: string;
   progress: number;
-  comments: number;
-  attachments: number;
+  comments?: number;
+  attachments?: number;
   dueDate: string;
   aiStatus: string;
   priority: Priority;

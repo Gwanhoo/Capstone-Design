@@ -39,8 +39,7 @@ export function ProjectListPage({ compact = false }: { compact?: boolean }) {
           id: project.id,
           name: project.name,
           description: project.description || "프로젝트 설명이 없습니다.",
-          status: project.status === "archived" ? "완료" : "진행중",
-          progress: project.status === "archived" ? 100 : 0,
+          status: project.status === "archived" ? "보관됨" : "진행중",
           members: project.memberCount,
           updatedAt: formatDate(project.updatedAt),
         })));

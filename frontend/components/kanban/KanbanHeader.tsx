@@ -7,8 +7,6 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { getMyInvitations, MyInvitation } from "@/lib/api/invitationApi";
 
-const members = ["LM", "KD", "PS", "JM"];
-
 export function KanbanHeader({
   onGenerateAiTask,
   projectName,
@@ -26,7 +24,6 @@ export function KanbanHeader({
   const [readIds, setReadIds] = useState<string[]>([]);
 
   useEffect(() => {
-    // TODO: 알림 읽음 처리 API가 추가되면 localStorage 대신 서버 상태를 사용합니다.
     setReadIds(JSON.parse(localStorage.getItem("kanban-ai:read-notifications") || "[]"));
     getMyInvitations().then(setInvitations).catch(() => setInvitations([]));
   }, []);
@@ -46,9 +43,8 @@ export function KanbanHeader({
 
   return (
     <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-white/10 bg-surface/70 px-4 backdrop-blur-xl md:px-6">
-      <div><h1 className="text-base font-bold text-on-surface md:text-lg">{projectName} · 메인 보드</h1><p className="text-xs text-on-surface-variant">실시간 태스크 흐름 · Sprint 12</p></div>
+      <div><h1 className="text-base font-bold text-on-surface md:text-lg">{projectName} · 메인 보드</h1><p className="text-xs text-on-surface-variant">실시간 태스크 흐름</p></div>
       <div className="flex items-center gap-3">
-        <div className="hidden -space-x-2 sm:flex">{members.map((m, i) => <div key={m} className="flex h-8 w-8 items-center justify-center rounded-full border border-surface bg-white/10 text-[10px] font-bold text-on-surface" style={{ opacity: 1 - i * 0.12 }}>{m}</div>)}<div className="flex h-8 w-8 items-center justify-center rounded-full border border-surface bg-surface-container-high text-[10px] font-bold text-on-surface-variant">+2</div></div>
         <button onClick={onGenerateAiTask} disabled={isGeneratingAiTask} className="hidden h-10 items-center gap-2 rounded-xl bg-[linear-gradient(135deg,#c3c0ff_0%,#4f46e5_100%)] px-4 text-sm font-semibold text-[#1d00a5] shadow-lg transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60 md:inline-flex"><Sparkles className="h-4 w-4" />{isGeneratingAiTask ? "AI 분석 중..." : "🤖 AI 작업 생성"}</button>
         <div className="relative">
           <button onClick={() => setIsNotificationOpen((value) => !value)} className="relative rounded-lg p-2 text-on-surface-variant transition hover:bg-white/10 hover:text-on-surface">
@@ -65,7 +61,6 @@ export function KanbanHeader({
                   <p className="mt-1 text-on-surface-variant">{invitation.inviter.name}님이 초대했습니다.</p>
                 </Link>
               ))}
-              <div className="mt-2 rounded-xl border border-white/10 p-3 text-xs text-on-surface-variant">AI 작업 생성 완료, 새 채팅 메시지, 배정 작업 알림은 추후 연결 예정입니다.</div>
             </div>
           ) : null}
         </div>
