@@ -9,7 +9,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "VoidIDE | AI 기반 실시간 협업 칸반",
+  title: "Kanban AI | AI 기반 실시간 협업 칸반",
   description: "AI 기반 실시간 협업 칸반 시스템 랜딩페이지"
 };
 

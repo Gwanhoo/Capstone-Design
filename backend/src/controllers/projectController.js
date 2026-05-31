@@ -27,7 +27,12 @@ const toPublicUser = (user) => ({
 export const getProjects = async (req, res) => {
   try {
     const userId = req.user?.userId;
-    const projects = await Project.find({ $or: [{ createdBy: userId }, { members: userId }] }).sort({ createdAt: -1 });
+    const search = String(req.query.search ?? '').trim();
+    const query = { $or: [{ createdBy: userId }, { members: userId }] };
+    if (search) {
+      query.$and = [{ $or: [{ name: { $regex: search, $options: 'i' } }, { description: { $regex: search, $options: 'i' } }] }];
+    }
+    const projects = await Project.find(query).sort({ createdAt: -1 });
     return res.status(200).json({ success: true, data: projects });
   } catch (error) {
     return handleError(res, error);
@@ -66,6 +71,62 @@ export const createProject = async (req, res) => {
     });
 
     return res.status(201).json({ success: true, data: project });
+  } catch (error) {
+    return handleError(res, error);
+  }
+};
+
+
+export const updateProject = async (req, res) => {
+  const { projectId } = req.params;
+  const { name, description } = req.body;
+
+  if (name !== undefined && !String(name).trim()) {
+    return res.status(400).json({ success: false, message: 'invalid request' });
+  }
+
+  try {
+    const project = await Project.findById(projectId);
+    if (!project) return res.status(404).json({ success: false, message: 'project not found' });
+    if (!canAccessProject(project, req.user?.userId)) return res.status(403).json({ success: false, message: 'forbidden' });
+
+    if (name !== undefined) project.name = String(name).trim();
+    if (description !== undefined) project.description = String(description).trim();
+    await project.save();
+
+    return res.status(200).json({ success: true, data: project });
+  } catch (error) {
+    return handleError(res, error);
+  }
+};
+
+export const getProjectDocs = async (req, res) => {
+  const { projectId } = req.params;
+
+  try {
+    const project = await Project.findById(projectId);
+    if (!project) return res.status(404).json({ success: false, message: 'project not found' });
+    if (!canAccessProject(project, req.user?.userId)) return res.status(403).json({ success: false, message: 'forbidden' });
+
+    return res.status(200).json({ success: true, data: { docs: project.docs || '' } });
+  } catch (error) {
+    return handleError(res, error);
+  }
+};
+
+export const updateProjectDocs = async (req, res) => {
+  const { projectId } = req.params;
+  const docs = String(req.body?.docs ?? '');
+
+  try {
+    const project = await Project.findById(projectId);
+    if (!project) return res.status(404).json({ success: false, message: 'project not found' });
+    if (!canAccessProject(project, req.user?.userId)) return res.status(403).json({ success: false, message: 'forbidden' });
+
+    project.docs = docs;
+    await project.save();
+
+    return res.status(200).json({ success: true, data: { docs: project.docs } });
   } catch (error) {
     return handleError(res, error);
   }

@@ -124,7 +124,7 @@ export function KanbanLayout({ projectId }: { projectId: string }) {
 
   return (
     <div className="flex h-screen bg-surface text-on-surface">
-      <ProjectSidebar />
+      <ProjectSidebar projectId={projectId} projectName={project?.name} />
       <div className="flex min-w-0 flex-1 flex-col">
         <KanbanHeader
           onGenerateAiTask={() => setIsAiPromptOpen(true)}

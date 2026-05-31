@@ -59,8 +59,9 @@ const mapMember = (member: BackendMember, createdBy: string): ProjectMember => (
   isOwner: String(member._id) === createdBy,
 });
 
-export const getProjects = async () => {
-  const data = await apiRequest<BackendProject[]>("/api/projects");
+export const getProjects = async (search?: string) => {
+  const query = search ? `?search=${encodeURIComponent(search)}` : "";
+  const data = await apiRequest<BackendProject[]>(`/api/projects${query}`);
   return data.map(mapProject);
 };
 
@@ -123,5 +124,24 @@ export const updateProjectColumn = async (projectId: string, columnId: string, t
 export const deleteProjectColumn = async (projectId: string, columnId: string) => {
   await apiRequest(`/api/projects/${projectId}/columns/${columnId}`, {
     method: "DELETE",
+  });
+};
+
+export const updateProject = async (projectId: string, payload: { name?: string; description?: string }) => {
+  const data = await apiRequest<BackendProject>(`/api/projects/${projectId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+  return mapProject(data);
+};
+
+export const getProjectDocs = async (projectId: string) => {
+  return apiRequest<{ docs: string }>(`/api/projects/${projectId}/docs`);
+};
+
+export const updateProjectDocs = async (projectId: string, docs: string) => {
+  return apiRequest<{ docs: string }>(`/api/projects/${projectId}/docs`, {
+    method: "PATCH",
+    body: JSON.stringify({ docs }),
   });
 };

@@ -1,18 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { FolderKanban, LayoutDashboard, LogOut, Settings, Sparkles, UserCircle2 } from "lucide-react";
 import { useAuth } from "@/components/providers/AuthProvider";
 
 const menus = [
-  { label: "대시보드", href: "/dashboard", icon: LayoutDashboard, active: true },
-  { label: "내 프로젝트", href: "/dashboard", icon: FolderKanban, active: false },
-  { label: "최근 작업", href: "/dashboard", icon: Sparkles, active: false },
-  { label: "설정", href: "/dashboard", icon: Settings, active: false }
+  { label: "대시보드", href: "/dashboard", icon: LayoutDashboard },
+  { label: "내 프로젝트", href: "/dashboard/projects", icon: FolderKanban },
+  { label: "최근 작업", href: "/dashboard/recent", icon: Sparkles },
+  { label: "설정", href: "/dashboard/settings", icon: Settings },
 ];
 
 export function Sidebar() {
+  const pathname = usePathname();
   const router = useRouter();
   const { user, logout } = useAuth();
 
@@ -29,7 +30,7 @@ export function Sidebar() {
             <Sparkles className="h-5 w-5" />
           </div>
           <div>
-            <p className="text-base font-bold text-on-surface">Kinetic Void</p>
+            <p className="text-base font-bold text-on-surface">Kanban AI</p>
             <p className="text-xs uppercase tracking-[0.18em] text-on-surface-variant">AI Collaboration</p>
           </div>
         </div>
@@ -37,12 +38,13 @@ export function Sidebar() {
         <nav className="space-y-1.5">
           {menus.map((menu) => {
             const Icon = menu.icon;
+            const active = menu.href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(menu.href);
             return (
               <Link
                 key={menu.label}
                 href={menu.href}
                 className={`flex items-center gap-3 rounded-xl border px-4 py-3 text-sm transition-all duration-200 ${
-                  menu.active
+                  active
                     ? "border-primary/30 bg-primary/15 text-on-surface shadow-[0_6px_24px_rgba(79,70,229,0.25)]"
                     : "border-transparent text-on-surface-variant hover:border-white/10 hover:bg-white/5 hover:text-on-surface"
                 }`}

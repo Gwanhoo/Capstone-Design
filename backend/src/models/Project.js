@@ -56,6 +56,10 @@ const projectSchema = new mongoose.Schema(
       type: [columnSchema],
       default: undefined,
     },
+    docs: {
+      type: String,
+      default: '',
+    },
   },
   {
     timestamps: true,
