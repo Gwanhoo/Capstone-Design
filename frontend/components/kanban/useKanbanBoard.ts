@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { initialColumns } from "./mockData";
 import { KanbanColumnType, Task, TaskInput } from "./types";
 import { createTask as createTaskApi, deleteTask as deleteTaskApi, getTasksByProject, moveTask as moveTaskApi, updateTask as updateTaskApi } from "@/lib/api/taskApi";
+import { createProjectColumn, getProjectColumns, ProjectColumn } from "@/lib/api/projectApi";
 import { connectSocket, disconnectSocket } from "@/lib/socket/client";
 
 type DragMeta = { taskId: string; fromColumnId: string; fromIndex: number } | null;
@@ -12,12 +12,15 @@ type BackendPriority = "urgent" | "high" | "medium" | "low";
 type SocketTask = { _id: string; projectId: string; columnId: string; title: string; description: string; priority: BackendPriority; assignee: string; progress: number; dueDate: string | null; aiStatus: string; order: number; createdAt: string; updatedAt: string };
 
 const priorityToFrontend: Record<BackendPriority, Task["priority"]> = { urgent: "긴급", high: "높음", medium: "보통", low: "낮음" };
+const toneByIndex: KanbanColumnType["tone"][] = ["slate", "primary", "tertiary"];
+
 const formatDueDate = (value: string | null) => {
   if (!value) return "";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
   return date.toISOString().slice(0, 10).replaceAll("-", ".");
 };
+
 const mapSocketTask = (task: SocketTask): Task => ({
   id: task._id,
   columnId: task.columnId,
@@ -36,8 +39,44 @@ const mapSocketTask = (task: SocketTask): Task => ({
   updatedAt: task.updatedAt,
 });
 
+const mapColumn = (column: ProjectColumn, index: number): KanbanColumnType => ({
+  id: column.id,
+  title: column.title,
+  tone: toneByIndex[index % toneByIndex.length],
+  taskIds: [],
+});
+
+const uniqueTaskIds = (taskIds: string[]) => Array.from(new Set(taskIds));
+
+const insertTaskIntoColumns = (columns: KanbanColumnType[], taskId: string, targetColumnId: string, targetIndex?: number) => {
+  const withoutTask = columns.map((column) => ({ ...column, taskIds: column.taskIds.filter((id) => id !== taskId) }));
+  return withoutTask.map((column) => {
+    if (column.id !== targetColumnId) return column;
+    const ids = uniqueTaskIds(column.taskIds);
+    const index = Math.max(0, Math.min(targetIndex ?? ids.length, ids.length));
+    ids.splice(index, 0, taskId);
+    return { ...column, taskIds: uniqueTaskIds(ids) };
+  });
+};
+
+const mergeTasksIntoColumns = (columns: KanbanColumnType[], tasks: Record<string, Task>) => {
+  const columnIds = new Set(columns.map((column) => column.id));
+  const columnMap = columns.reduce<Record<string, string[]>>((acc, column) => ({ ...acc, [column.id]: [] }), {});
+
+  Object.values(tasks).forEach((task) => {
+    const columnId = columnIds.has(task.columnId) ? task.columnId : "todo";
+    if (!columnMap[columnId]) columnMap[columnId] = [];
+    columnMap[columnId].push(task.id);
+  });
+
+  return columns.map((column) => ({
+    ...column,
+    taskIds: uniqueTaskIds(columnMap[column.id] ?? []).sort((a, b) => (tasks[a]?.order ?? 0) - (tasks[b]?.order ?? 0)),
+  }));
+};
+
 export function useKanbanBoard(projectId: string) {
-  const [columns, setColumns] = useState<KanbanColumnType[]>(initialColumns);
+  const [columns, setColumns] = useState<KanbanColumnType[]>([]);
   const [tasks, setTasks] = useState<Record<string, Task>>({});
   const [dragMeta, setDragMeta] = useState<DragMeta>(null);
   const [dropColumnId, setDropColumnId] = useState<string | null>(null);
@@ -45,33 +84,25 @@ export function useKanbanBoard(projectId: string) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const loadTasks = async () => {
+    const loadBoard = async () => {
       try {
         setIsLoading(true);
         setError(null);
-        const fetchedTasks = await getTasksByProject(projectId);
-        const nextTasks: Record<string, Task> = {};
-        const columnMap: Record<string, string[]> = { todo: [], "in-progress": [], done: [] };
-
-        fetchedTasks.forEach((task) => {
-          nextTasks[task.id] = task;
-          if (!columnMap[task.columnId]) columnMap.todo.push(task.id);
-          else columnMap[task.columnId].push(task.id);
-        });
+        const [fetchedColumns, fetchedTasks] = await Promise.all([getProjectColumns(projectId), getTasksByProject(projectId)]);
+        const nextTasks = fetchedTasks.reduce<Record<string, Task>>((acc, task) => ({ ...acc, [task.id]: task }), {});
+        const nextColumns = fetchedColumns.map(mapColumn);
 
         setTasks(nextTasks);
-        setColumns((prev) =>
-          prev.map((col) => ({ ...col, taskIds: (columnMap[col.id] ?? []).sort((a, b) => (nextTasks[a]?.order ?? 0) - (nextTasks[b]?.order ?? 0)) })),
-        );
+        setColumns(mergeTasksIntoColumns(nextColumns, nextTasks));
       } catch (loadError) {
         console.error(loadError);
-        setError("작업 목록을 불러오지 못했습니다.");
+        setError("보드 정보를 불러오지 못했습니다.");
       } finally {
         setIsLoading(false);
       }
     };
 
-    loadTasks();
+    loadBoard();
   }, [projectId]);
 
   useEffect(() => {
@@ -85,15 +116,8 @@ export function useKanbanBoard(projectId: string) {
 
     const handleCreated = (raw: SocketTask) => {
       const task = mapSocketTask(raw);
-      setTasks((prev) => {
-        if (prev[task.id]) return { ...prev, [task.id]: { ...prev[task.id], ...task } };
-        return { ...prev, [task.id]: task };
-      });
-      setColumns((prev) => prev.map((col) => {
-        if (col.id !== task.columnId) return col;
-        if (col.taskIds.includes(task.id)) return col;
-        return { ...col, taskIds: [...col.taskIds, task.id] };
-      }));
+      setTasks((prev) => ({ ...prev, [task.id]: { ...prev[task.id], ...task } }));
+      setColumns((prev) => insertTaskIntoColumns(prev, task.id, task.columnId, task.order));
     };
 
     const handleUpdated = (raw: SocketTask) => {
@@ -114,22 +138,31 @@ export function useKanbanBoard(projectId: string) {
     const handleMoved = (raw: SocketTask) => {
       const task = mapSocketTask(raw);
       setTasks((prev) => ({ ...prev, [task.id]: { ...prev[task.id], ...task } }));
+      setColumns((prev) => insertTaskIntoColumns(prev, task.id, task.columnId, task.order));
+    };
+
+    const handleColumnCreated = (column: ProjectColumn) => {
       setColumns((prev) => {
-        const removed = prev.map((col) => ({ ...col, taskIds: col.taskIds.filter((id) => id !== task.id) }));
-        return removed.map((col) => {
-          if (col.id !== task.columnId) return col;
-          const ids = [...col.taskIds];
-          const idx = Math.max(0, Math.min(task.order, ids.length));
-          ids.splice(idx, 0, task.id);
-          return { ...col, taskIds: ids };
-        });
+        if (prev.some((item) => item.id === column.id)) return prev;
+        return [...prev, mapColumn(column, prev.length)];
       });
+    };
+
+    const handleColumnUpdated = (column: ProjectColumn) => {
+      setColumns((prev) => prev.map((item, index) => (item.id === column.id ? { ...mapColumn(column, index), taskIds: item.taskIds } : item)));
+    };
+
+    const handleColumnDeleted = ({ columnId }: { columnId: string }) => {
+      setColumns((prev) => prev.filter((column) => column.id !== columnId));
     };
 
     socket.on("task:created", handleCreated);
     socket.on("task:updated", handleUpdated);
     socket.on("task:deleted", handleDeleted);
     socket.on("task:moved", handleMoved);
+    socket.on("column:created", handleColumnCreated);
+    socket.on("column:updated", handleColumnUpdated);
+    socket.on("column:deleted", handleColumnDeleted);
 
     return () => {
       socket.emit("leave-project", { projectId });
@@ -137,6 +170,9 @@ export function useKanbanBoard(projectId: string) {
       socket.off("task:updated", handleUpdated);
       socket.off("task:deleted", handleDeleted);
       socket.off("task:moved", handleMoved);
+      socket.off("column:created", handleColumnCreated);
+      socket.off("column:updated", handleColumnUpdated);
+      socket.off("column:deleted", handleColumnDeleted);
       disconnectSocket();
     };
   }, [projectId]);
@@ -147,21 +183,15 @@ export function useKanbanBoard(projectId: string) {
   const moveTask = async (targetColumnId: string, targetIndex?: number) => {
     if (!dragMeta) return;
 
-    let movedTaskId = dragMeta.taskId;
-    let movedOrder = targetIndex ?? 0;
+    const movedTaskId = dragMeta.taskId;
+    const target = columns.find((column) => column.id === targetColumnId);
+    const source = columns.find((column) => column.id === dragMeta.fromColumnId);
+    const targetIdsWithoutTask = target?.taskIds.filter((id) => id !== movedTaskId) ?? [];
+    let insertIndex = targetIndex ?? targetIdsWithoutTask.length;
+    if (source?.id === target?.id && typeof targetIndex === "number" && targetIndex > dragMeta.fromIndex) insertIndex -= 1;
+    const movedOrder = Math.max(0, Math.min(insertIndex, targetIdsWithoutTask.length));
 
-    setColumns((prev) => {
-      const next = prev.map((col) => ({ ...col, taskIds: [...col.taskIds] }));
-      const source = next.find((c) => c.id === dragMeta.fromColumnId);
-      const target = next.find((c) => c.id === targetColumnId);
-      if (!source || !target) return prev;
-      source.taskIds.splice(dragMeta.fromIndex, 1);
-      let insertIndex = targetIndex ?? target.taskIds.length;
-      if (source.id === target.id && typeof targetIndex === "number" && targetIndex > dragMeta.fromIndex) insertIndex -= 1;
-      movedOrder = Math.max(0, insertIndex);
-      target.taskIds.splice(movedOrder, 0, dragMeta.taskId);
-      return next;
-    });
+    setColumns((prev) => insertTaskIntoColumns(prev, movedTaskId, targetColumnId, movedOrder));
 
     setTasks((prev) => ({ ...prev, [movedTaskId]: { ...prev[movedTaskId], columnId: targetColumnId, order: movedOrder } }));
     setDragMeta(null);
@@ -170,6 +200,7 @@ export function useKanbanBoard(projectId: string) {
     try {
       const moved = await moveTaskApi(movedTaskId, { columnId: targetColumnId, order: movedOrder });
       setTasks((prev) => ({ ...prev, [movedTaskId]: { ...prev[movedTaskId], ...moved } }));
+      setColumns((prev) => insertTaskIntoColumns(prev, movedTaskId, moved.columnId, moved.order));
     } catch (moveError) {
       console.error(moveError);
       setError("카드 이동 반영에 실패했습니다.");
@@ -182,10 +213,26 @@ export function useKanbanBoard(projectId: string) {
       const column = columns.find((col) => col.id === columnId);
       const created = await createTaskApi(projectId, { ...task, columnId, order: column?.taskIds.length ?? 0 });
       setTasks((prev) => ({ ...prev, [created.id]: created }));
-      setColumns((prev) => prev.map((col) => (col.id === columnId ? { ...col, taskIds: [...col.taskIds, created.id] } : col)));
+      setColumns((prev) => insertTaskIntoColumns(prev, created.id, columnId));
     } catch (createError) {
       console.error(createError);
       setError("카드 생성에 실패했습니다.");
+      throw createError;
+    }
+  };
+
+  const createColumn = async (title: string) => {
+    try {
+      setError(null);
+      const created = await createProjectColumn(projectId, title);
+      setColumns((prev) => {
+        if (prev.some((column) => column.id === created.id)) return prev;
+        return [...prev, mapColumn(created, prev.length)];
+      });
+    } catch (createError) {
+      console.error(createError);
+      setError("열 생성에 실패했습니다.");
+      throw createError;
     }
   };
 
@@ -220,11 +267,5 @@ export function useKanbanBoard(projectId: string) {
     }
   };
 
-  const addAiGeneratedTask = async () => {
-    const samples = ["API 응답 구조 검토", "실시간 동기화 예외 처리", "작업 우선순위 자동 분류 개선"];
-    const title = samples[Math.floor(Math.random() * samples.length)];
-    await createTask("todo", { title, description: "AI 분석으로 생성된 추천 작업입니다.", priority: "높음", assignee: "AI 추천", dueDate: "2026.05.20" });
-  };
-
-  return { orderedColumns, tasks, dragMeta, dropColumnId, setDropColumnId, startDrag, moveTask, createTask, updateTask, deleteTask, addAiGeneratedTask, isLoading, error };
+  return { orderedColumns, tasks, dragMeta, dropColumnId, setDropColumnId, startDrag, moveTask, createTask, createColumn, updateTask, deleteTask, isLoading, error };
 }
