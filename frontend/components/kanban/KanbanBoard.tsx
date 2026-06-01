@@ -26,7 +26,7 @@ export function KanbanBoard(props: Props) {
 
   return (
     <>
-      <div className="flex h-full gap-4 overflow-x-auto px-4 py-4 md:px-6">
+      <div className="flex h-full items-start gap-3 overflow-x-auto overflow-y-hidden px-3 py-3 md:px-4">
         {props.orderedColumns.map((column) => (
           <KanbanColumn
             key={column.id}
@@ -42,7 +42,7 @@ export function KanbanBoard(props: Props) {
             onAddTask={props.createTask}
           />
         ))}
-        <button onClick={props.onOpenCreateColumn} className="h-28 min-w-[280px] self-start rounded-2xl border border-dashed border-white/15 bg-white/[0.03] text-on-surface-variant transition hover:border-primary/40 hover:bg-primary/5 hover:text-primary"><span className="flex flex-col items-center justify-center gap-2 text-sm font-semibold"><PlusCircle className="h-5 w-5" />새 열 추가</span></button>
+        <button onClick={props.onOpenCreateColumn} className="h-24 min-w-[240px] self-start rounded-xl border border-dashed border-white/15 bg-white/[0.03] text-on-surface-variant transition hover:border-primary/40 hover:bg-primary/5 hover:text-primary"><span className="flex flex-col items-center justify-center gap-2 text-sm font-semibold"><PlusCircle className="h-5 w-5" />새 열 추가</span></button>
       </div>
       {selectedTask && <TaskModal task={selectedTask} onClose={closeTaskModal} onSave={(data) => { props.updateTask(selectedTask.id, data); closeTaskModal(); }} />}
     </>

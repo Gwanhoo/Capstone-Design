@@ -13,7 +13,7 @@ const formatTime = (iso: string) => {
   return date.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
 };
 
-export function TeamChatPanel({ projectId }: { projectId: string }) {
+export function TeamChatPanel({ projectId, className = "" }: { projectId: string; className?: string }) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<ProjectChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -92,9 +92,9 @@ export function TeamChatPanel({ projectId }: { projectId: string }) {
   };
 
   return (
-    <aside className="flex h-full w-full max-w-sm flex-col border-l border-white/10 bg-surface-container-low/70 backdrop-blur-xl">
+    <aside className={`flex h-full min-h-0 w-full flex-col rounded-2xl border border-white/10 bg-surface-container-low/70 backdrop-blur-xl ${className}`}>
       <div className="flex items-center justify-between border-b border-white/10 px-4 py-3"><h3 className="text-sm font-semibold text-on-surface">팀 채팅</h3><span className="text-[11px] text-tertiary">{onlineCount || 1}명 참여</span></div>
-      <div className="flex-1 space-y-3 overflow-y-auto px-4 py-3">
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-3">
         {isLoading ? <p className="text-xs text-on-surface-variant">메시지를 불러오는 중...</p> : null}
         {!isLoading && !error && messages.length === 0 ? <p className="text-xs text-on-surface-variant">아직 메시지가 없습니다. 첫 메시지를 남겨보세요.</p> : null}
         {error ? <p className="text-xs text-red-300">{error}</p> : null}
