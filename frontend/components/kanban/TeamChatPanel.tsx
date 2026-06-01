@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Send } from "lucide-react";
 import { ChatMessage } from "./ChatMessage";
 import { useAuth } from "@/components/providers/AuthProvider";
@@ -68,7 +68,7 @@ export function TeamChatPanel({ projectId }: { projectId: string }) {
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     const text = input.trim();
-    if (!text) return;
+    if (!text || isSubmitting) return;
 
     try {
       setIsSubmitting(true);
@@ -81,6 +81,14 @@ export function TeamChatPanel({ projectId }: { projectId: string }) {
       setIsSubmitting(false);
       scrollToBottom();
     }
+  };
+
+  const handleInputKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.nativeEvent.isComposing) return;
+    if (event.key !== "Enter" || event.shiftKey) return;
+
+    event.preventDefault();
+    event.currentTarget.form?.requestSubmit();
   };
 
   return (
@@ -104,7 +112,7 @@ export function TeamChatPanel({ projectId }: { projectId: string }) {
         ))}
         <div ref={bottomRef} />
       </div>
-      <form onSubmit={handleSubmit} className="border-t border-white/10 p-3"><div className="relative"><textarea value={input} onChange={(event) => setInput(event.target.value)} rows={2} placeholder="메시지를 입력하세요..." className="w-full resize-none rounded-xl border border-white/10 bg-surface-container-lowest px-3 py-2 pr-10 text-xs text-on-surface outline-none focus:border-primary/40 focus:ring-1 focus:ring-primary/30" /><button type="submit" disabled={isSubmitting} className="absolute bottom-2 right-2 rounded-md bg-primary p-1.5 text-on-primary disabled:opacity-60"><Send className="h-3.5 w-3.5" /></button></div></form>
+      <form onSubmit={handleSubmit} className="border-t border-white/10 p-3"><div className="relative"><textarea value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={handleInputKeyDown} rows={2} placeholder="메시지를 입력하세요..." className="w-full resize-none rounded-xl border border-white/10 bg-surface-container-lowest px-3 py-2 pr-10 text-xs text-on-surface outline-none focus:border-primary/40 focus:ring-1 focus:ring-primary/30" /><button type="submit" disabled={isSubmitting} className="absolute bottom-2 right-2 rounded-md bg-primary p-1.5 text-on-primary disabled:opacity-60"><Send className="h-3.5 w-3.5" /></button></div></form>
     </aside>
   );
 }
