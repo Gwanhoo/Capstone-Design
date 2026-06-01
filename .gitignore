@@ -1,2 +1,8 @@
 .env
 backend/.env
+node_modules/
+frontend/node_modules/
+.next/
+frontend/.next/
+tsconfig.tsbuildinfo
+frontend/tsconfig.tsbuildinfo
