@@ -399,7 +399,7 @@ export function InteractivePresentation() {
                   <div className="flex items-center gap-2 text-sm font-black text-white"><GripVertical className="h-4 w-4 text-outline" /> 인터랙티브 칸반 보드</div>
                   <div className="flex flex-wrap items-center justify-end gap-2"><span className="rounded-full bg-primary/15 px-3 py-1 text-xs font-bold text-primary">카드 생성 · 수정 · 삭제</span><span className="rounded-full bg-primary/15 px-3 py-1 text-xs font-bold text-primary">드래그 앤 드롭</span></div>
                 </div>
-                <div className="flex min-h-[620px] gap-4 overflow-x-auto p-4">
+                <div className="flex min-h-[620px] items-start gap-4 overflow-x-auto p-4">
                   {orderedColumns.map((column) => (
                     <section
                       key={column.id}
@@ -409,7 +409,7 @@ export function InteractivePresentation() {
                       }}
                       onDragLeave={() => setActiveColumnId(null)}
                       onDrop={() => moveTask(column.id)}
-                      className={`w-[300px] min-w-[300px] rounded-2xl border p-3 transition ${activeColumnId === column.id ? "border-primary/50 bg-primary/10" : "border-white/10 bg-white/[0.04]"}`}
+                      className={`min-h-[620px] w-[300px] min-w-[300px] rounded-2xl border p-3 transition ${activeColumnId === column.id ? "border-primary/50 bg-primary/10" : "border-white/10 bg-white/[0.04]"}`}
                     >
                       <div className="mb-3 flex items-center justify-between px-1">
                         <div className="flex items-center gap-2"><span className={`h-2 w-2 rounded-full ${columnTone[column.tone]}`} /><h3 className="text-sm font-semibold text-on-surface">{column.title}</h3><span className="rounded-md bg-white/10 px-2 py-0.5 text-[10px] text-on-surface-variant">{column.taskIds.length}</span></div>
