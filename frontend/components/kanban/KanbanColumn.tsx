@@ -18,12 +18,12 @@ type Props = {
 
 export function KanbanColumn({ column, tasks, onDropTask, onDragTask, activeTaskId, isDropActive, onOpenTask, onDeleteTask, onAddTask, onSetDropActive }: Props) {
   const [adding, setAdding] = useState(false);
-  return <section onDragOver={(e) => { e.preventDefault(); onSetDropActive(column.id); }} onDragLeave={() => onSetDropActive(null)} onDrop={() => onDropTask(column.id)} className={`w-[320px] min-w-[320px] rounded-2xl border p-3 ${isDropActive ? "border-primary/40 bg-primary/5" : "border-white/10 bg-white/[0.04]"}`}>
-    <div className="mb-3 flex items-center justify-between px-1">
+  return <section onDragOver={(e) => { e.preventDefault(); onSetDropActive(column.id); }} onDragLeave={() => onSetDropActive(null)} onDrop={() => onDropTask(column.id)} className={`flex max-h-[calc(100vh-7rem)] w-[264px] min-w-[264px] flex-col rounded-xl border p-2.5 ${isDropActive ? "border-primary/40 bg-primary/5" : "border-white/10 bg-white/[0.04]"}`}>
+    <div className="mb-2 flex shrink-0 items-center justify-between px-1">
       <div className="flex items-center gap-2"><span className={`h-2 w-2 rounded-full ${toneClass[column.tone]}`} /><h3 className="text-sm font-semibold text-on-surface">{column.title}</h3><span className="rounded-md bg-surface-container-high px-2 py-0.5 text-[10px] text-on-surface-variant">{tasks.length}</span></div>
       <button onClick={() => setAdding((v) => !v)} className="rounded-md p-1 text-outline transition hover:bg-white/10 hover:text-on-surface"><Plus className="h-4 w-4" /></button>
     </div>
-    {adding && <div className="mb-3 rounded-xl border border-white/10 bg-black/20 p-3"><TaskForm onCancel={() => setAdding(false)} onSubmit={(payload) => { onAddTask(column.id, payload); setAdding(false); }} /></div>}
-    <div className="space-y-3">{tasks.map((task, index) => <div key={task.id} draggable onDragStart={() => onDragTask(task.id, column.id, index)} onDragOver={(e) => e.preventDefault()} onDrop={(event) => { event.stopPropagation(); onDropTask(column.id, index); }}><TaskCard task={task} isDragging={activeTaskId === task.id} onClick={() => onOpenTask(task.id)} onDelete={() => onDeleteTask(task.id)} /></div>)}</div>
+    {adding && <div className="mb-2 shrink-0 rounded-xl border border-white/10 bg-black/20 p-2.5"><TaskForm onCancel={() => setAdding(false)} onSubmit={(payload) => { onAddTask(column.id, payload); setAdding(false); }} /></div>}
+    <div className="min-h-24 flex-1 space-y-2 overflow-y-auto pr-1">{tasks.map((task, index) => <div key={task.id} draggable onDragStart={() => onDragTask(task.id, column.id, index)} onDragOver={(e) => e.preventDefault()} onDrop={(event) => { event.stopPropagation(); onDropTask(column.id, index); }}><TaskCard task={task} isDragging={activeTaskId === task.id} onClick={() => onOpenTask(task.id)} onDelete={() => onDeleteTask(task.id)} /></div>)}</div>
   </section>;
 }

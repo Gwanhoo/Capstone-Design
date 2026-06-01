@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 import { Send } from "lucide-react";
 import { ChatMessage } from "./ChatMessage";
 import { useAuth } from "@/components/providers/AuthProvider";
@@ -13,7 +13,7 @@ const formatTime = (iso: string) => {
   return date.toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" });
 };
 
-export function TeamChatPanel({ projectId }: { projectId: string }) {
+export function TeamChatPanel({ projectId, className = "" }: { projectId: string; className?: string }) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<ProjectChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -68,7 +68,7 @@ export function TeamChatPanel({ projectId }: { projectId: string }) {
   const handleSubmit = async (event: FormEvent) => {
     event.preventDefault();
     const text = input.trim();
-    if (!text) return;
+    if (!text || isSubmitting) return;
 
     try {
       setIsSubmitting(true);
@@ -83,10 +83,18 @@ export function TeamChatPanel({ projectId }: { projectId: string }) {
     }
   };
 
+  const handleInputKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (event.nativeEvent.isComposing) return;
+    if (event.key !== "Enter" || event.shiftKey) return;
+
+    event.preventDefault();
+    event.currentTarget.form?.requestSubmit();
+  };
+
   return (
-    <aside className="flex h-full w-full max-w-sm flex-col border-l border-white/10 bg-surface-container-low/70 backdrop-blur-xl">
+    <aside className={`flex h-full min-h-0 w-full flex-col rounded-2xl border border-white/10 bg-surface-container-low/70 backdrop-blur-xl ${className}`}>
       <div className="flex items-center justify-between border-b border-white/10 px-4 py-3"><h3 className="text-sm font-semibold text-on-surface">팀 채팅</h3><span className="text-[11px] text-tertiary">{onlineCount || 1}명 참여</span></div>
-      <div className="flex-1 space-y-3 overflow-y-auto px-4 py-3">
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-3">
         {isLoading ? <p className="text-xs text-on-surface-variant">메시지를 불러오는 중...</p> : null}
         {!isLoading && !error && messages.length === 0 ? <p className="text-xs text-on-surface-variant">아직 메시지가 없습니다. 첫 메시지를 남겨보세요.</p> : null}
         {error ? <p className="text-xs text-red-300">{error}</p> : null}
@@ -104,7 +112,7 @@ export function TeamChatPanel({ projectId }: { projectId: string }) {
         ))}
         <div ref={bottomRef} />
       </div>
-      <form onSubmit={handleSubmit} className="border-t border-white/10 p-3"><div className="relative"><textarea value={input} onChange={(event) => setInput(event.target.value)} rows={2} placeholder="메시지를 입력하세요..." className="w-full resize-none rounded-xl border border-white/10 bg-surface-container-lowest px-3 py-2 pr-10 text-xs text-on-surface outline-none focus:border-primary/40 focus:ring-1 focus:ring-primary/30" /><button type="submit" disabled={isSubmitting} className="absolute bottom-2 right-2 rounded-md bg-primary p-1.5 text-on-primary disabled:opacity-60"><Send className="h-3.5 w-3.5" /></button></div></form>
+      <form onSubmit={handleSubmit} className="border-t border-white/10 p-3"><div className="relative"><textarea value={input} onChange={(event) => setInput(event.target.value)} onKeyDown={handleInputKeyDown} rows={2} placeholder="메시지를 입력하세요..." className="w-full resize-none rounded-xl border border-white/10 bg-surface-container-lowest px-3 py-2 pr-10 text-xs text-on-surface outline-none focus:border-primary/40 focus:ring-1 focus:ring-primary/30" /><button type="submit" disabled={isSubmitting} className="absolute bottom-2 right-2 rounded-md bg-primary p-1.5 text-on-primary disabled:opacity-60"><Send className="h-3.5 w-3.5" /></button></div></form>
     </aside>
   );
 }

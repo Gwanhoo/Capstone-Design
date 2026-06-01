@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { MessageSquareText, X } from "lucide-react";
 import { getProjectById, Project } from "@/lib/api/projectApi";
 import { AiGeneratedTask, decomposeProjectTasks } from "@/lib/api/aiApi";
 import { KanbanBoard } from "./KanbanBoard";
@@ -34,6 +35,7 @@ export function KanbanLayout({ projectId }: { projectId: string }) {
   const [isAiAdding, setIsAiAdding] = useState(false);
   const [aiMessage, setAiMessage] = useState<string | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
+  const [isChatDrawerOpen, setIsChatDrawerOpen] = useState(false);
 
   useEffect(() => {
     const loadProject = async () => {
@@ -131,9 +133,9 @@ export function KanbanLayout({ projectId }: { projectId: string }) {
           isGeneratingAiTask={isAiLoading}
           projectName={isProjectLoading ? "프로젝트 불러오는 중..." : project?.name || "프로젝트"}
         />
-        <div className="flex min-h-0 flex-1">
+        <div className="relative flex min-h-0 flex-1 overflow-hidden">
           <div className="min-w-0 flex-1 overflow-hidden">
-            {board.isLoading ? <div className="px-6 py-6 text-sm text-on-surface-variant">작업을 불러오는 중...</div> : <KanbanBoard
+            {board.isLoading ? <div className="px-4 py-4 text-sm text-on-surface-variant">작업을 불러오는 중...</div> : <KanbanBoard
               orderedColumns={board.orderedColumns}
               tasks={board.tasks}
               activeTaskId={board.dragMeta?.taskId ?? null}
@@ -146,16 +148,53 @@ export function KanbanLayout({ projectId }: { projectId: string }) {
               updateTask={board.updateTask}
               deleteTask={board.deleteTask}
             />}
-            {isAiLoading ? <div className="px-6 pb-2 text-sm text-primary">AI가 프로젝트를 분석하는 중...</div> : null}
-            {aiMessage && !isAiLoading ? <div className="px-6 pb-2 text-sm text-emerald-300">{aiMessage}</div> : null}
-            {aiError ? <div className="px-6 pb-2 text-sm text-red-300">{aiError}</div> : null}
-            {projectError ? <div className="px-6 pb-2 text-sm text-red-300">{projectError}</div> : null}
-            {board.error ? <div className="px-6 pb-2 text-sm text-red-300">{board.error}</div> : null}
+            <div className="pointer-events-none absolute bottom-4 left-4 z-10 space-y-1">
+              {isAiLoading ? <div className="pointer-events-auto rounded-lg border border-primary/20 bg-surface-container-high/95 px-3 py-2 text-xs text-primary shadow-lg">AI가 프로젝트를 분석하는 중...</div> : null}
+              {aiMessage && !isAiLoading ? <div className="pointer-events-auto rounded-lg border border-emerald-400/20 bg-surface-container-high/95 px-3 py-2 text-xs text-emerald-300 shadow-lg">{aiMessage}</div> : null}
+              {aiError ? <div className="pointer-events-auto rounded-lg border border-red-400/20 bg-surface-container-high/95 px-3 py-2 text-xs text-red-300 shadow-lg">{aiError}</div> : null}
+              {projectError ? <div className="pointer-events-auto rounded-lg border border-red-400/20 bg-surface-container-high/95 px-3 py-2 text-xs text-red-300 shadow-lg">{projectError}</div> : null}
+              {board.error ? <div className="pointer-events-auto rounded-lg border border-red-400/20 bg-surface-container-high/95 px-3 py-2 text-xs text-red-300 shadow-lg">{board.error}</div> : null}
+            </div>
           </div>
-          <div className="hidden xl:flex xl:w-[340px] xl:flex-col xl:gap-3 xl:p-3">
-            <MemberManagementPanel projectId={projectId} />
-            <TeamChatPanel projectId={projectId} />
-          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsChatDrawerOpen(true)}
+            className="absolute bottom-4 right-4 z-20 inline-flex items-center gap-2 rounded-full border border-white/15 bg-surface-container-high/95 px-4 py-2 text-sm font-semibold text-on-surface shadow-2xl shadow-black/30 backdrop-blur-xl transition hover:border-primary/40 hover:text-primary"
+          >
+            <MessageSquareText className="h-4 w-4" />
+            팀 채팅
+          </button>
+
+          {isChatDrawerOpen ? (
+            <div className="absolute inset-0 z-30 flex justify-end bg-black/35 backdrop-blur-[2px]" onClick={() => setIsChatDrawerOpen(false)}>
+              <aside
+                className="flex h-full w-full max-w-[380px] flex-col border-l border-white/10 bg-surface-container-low/95 shadow-2xl shadow-black/50"
+                onClick={(event) => event.stopPropagation()}
+              >
+                <div className="flex h-14 shrink-0 items-center justify-between border-b border-white/10 px-4">
+                  <div>
+                    <h2 className="text-sm font-bold text-on-surface">협업 패널</h2>
+                    <p className="text-[11px] text-on-surface-variant">필요할 때 열어 쓰는 채팅·멤버 도구</p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsChatDrawerOpen(false)}
+                    className="rounded-lg p-2 text-on-surface-variant transition hover:bg-white/10 hover:text-on-surface"
+                    aria-label="협업 패널 닫기"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+                <div className="flex min-h-0 flex-1 flex-col gap-3 p-3">
+                  <div className="shrink-0">
+                    <MemberManagementPanel projectId={projectId} />
+                  </div>
+                  <TeamChatPanel projectId={projectId} className="min-h-0 flex-1" />
+                </div>
+              </aside>
+            </div>
+          ) : null}
         </div>
       </div>
       {isAiPromptOpen ? <AiTaskPromptModal isGenerating={isAiLoading} onClose={() => setIsAiPromptOpen(false)} onSubmit={handleGenerateAiTasks} /> : null}
