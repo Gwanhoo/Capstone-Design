@@ -117,6 +117,30 @@ export const updateTask = async (req, res) => {
   }
 };
 
+
+export const updateTaskMemo = async (req, res) => {
+  const { taskId } = req.params;
+  const memo = String(req.body?.memo ?? '');
+
+  try {
+    const auth = await getAuthorizedTask(taskId, req.user?.userId);
+    if (auth.notFound) return res.status(404).json({ success: false, message: 'task not found' });
+    if (!auth.allowed) return res.status(403).json({ success: false, message: 'forbidden' });
+
+    auth.task.memo = memo;
+    await auth.task.save();
+
+    emitTaskEvent(req, 'task:updated', auth.task.projectId, auth.task);
+
+    return res.status(200).json({
+      success: true,
+      data: auth.task,
+    });
+  } catch (error) {
+    return handleError(res, error);
+  }
+};
+
 export const deleteTask = async (req, res) => {
   const { taskId } = req.params;
 

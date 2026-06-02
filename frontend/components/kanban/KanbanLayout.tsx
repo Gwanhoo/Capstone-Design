@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { MessageSquareText, X } from "lucide-react";
 import { getProjectById, Project } from "@/lib/api/projectApi";
 import { AiGeneratedTask, decomposeProjectTasks } from "@/lib/api/aiApi";
@@ -22,6 +23,7 @@ const priorityToFrontend: Record<AiGeneratedTask["priority"], "긴급" | "높음
 };
 
 export function KanbanLayout({ projectId }: { projectId: string }) {
+  const router = useRouter();
   const board = useKanbanBoard(projectId);
   const [project, setProject] = useState<Project | null>(null);
   const [isProjectLoading, setIsProjectLoading] = useState(true);
@@ -37,6 +39,16 @@ export function KanbanLayout({ projectId }: { projectId: string }) {
   const [aiMessage, setAiMessage] = useState<string | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
   const [isChatDrawerOpen, setIsChatDrawerOpen] = useState(false);
+
+  useEffect(() => {
+    const onProjectDeleted = (event: Event) => {
+      const deletedProjectId = (event as CustomEvent<{ projectId: string }>).detail?.projectId;
+      if (deletedProjectId === projectId) router.replace("/dashboard/projects");
+    };
+
+    window.addEventListener("project:deleted", onProjectDeleted);
+    return () => window.removeEventListener("project:deleted", onProjectDeleted);
+  }, [projectId, router]);
 
   useEffect(() => {
     const loadProject = async () => {
@@ -153,6 +165,7 @@ export function KanbanLayout({ projectId }: { projectId: string }) {
               createTask={board.createTask}
               onOpenCreateColumn={() => setIsColumnModalOpen(true)}
               updateTask={board.updateTask}
+              updateTaskMemo={board.updateTaskMemo}
               deleteTask={board.deleteTask}
             />}
             <div className="pointer-events-none absolute bottom-4 left-4 z-10 space-y-1">
