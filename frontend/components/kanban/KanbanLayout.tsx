@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { MessageSquareText, X } from "lucide-react";
 import { getProjectById, Project } from "@/lib/api/projectApi";
 import { AiGeneratedTask, decomposeProjectTasks } from "@/lib/api/aiApi";
@@ -22,11 +23,13 @@ const priorityToFrontend: Record<AiGeneratedTask["priority"], "긴급" | "높음
 };
 
 export function KanbanLayout({ projectId }: { projectId: string }) {
+  const router = useRouter();
   const board = useKanbanBoard(projectId);
   const [project, setProject] = useState<Project | null>(null);
   const [isProjectLoading, setIsProjectLoading] = useState(true);
   const [projectError, setProjectError] = useState<string | null>(null);
   const [aiTasks, setAiTasks] = useState<AiGeneratedTask[]>([]);
+  const [aiAgentInfo, setAiAgentInfo] = useState<{ selectedAgentType: string; confidence: number; reason: string } | null>(null);
   const [isAiPromptOpen, setIsAiPromptOpen] = useState(false);
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [isColumnModalOpen, setIsColumnModalOpen] = useState(false);
@@ -36,6 +39,16 @@ export function KanbanLayout({ projectId }: { projectId: string }) {
   const [aiMessage, setAiMessage] = useState<string | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
   const [isChatDrawerOpen, setIsChatDrawerOpen] = useState(false);
+
+  useEffect(() => {
+    const onProjectDeleted = (event: Event) => {
+      const deletedProjectId = (event as CustomEvent<{ projectId: string }>).detail?.projectId;
+      if (deletedProjectId === projectId) router.replace("/dashboard/projects");
+    };
+
+    window.addEventListener("project:deleted", onProjectDeleted);
+    return () => window.removeEventListener("project:deleted", onProjectDeleted);
+  }, [projectId, router]);
 
   useEffect(() => {
     const loadProject = async () => {
@@ -76,9 +89,14 @@ export function KanbanLayout({ projectId }: { projectId: string }) {
         existingTasks: existingTasks(),
       });
       setAiTasks(result.tasks);
+      setAiAgentInfo({
+        selectedAgentType: result.selectedAgentType,
+        confidence: result.confidence,
+        reason: result.reason,
+      });
       setIsAiPromptOpen(false);
       setIsAiModalOpen(true);
-      setAiMessage(`AI 작업 ${result.tasks.length}개가 생성되었습니다.`);
+      setAiMessage(`${result.selectedAgentType} Agent가 AI 작업 ${result.tasks.length}개를 생성했습니다.`);
     } catch (error) {
       console.error(error);
       setAiError("AI 작업 생성 실패");
@@ -116,6 +134,7 @@ export function KanbanLayout({ projectId }: { projectId: string }) {
       setAiMessage(`AI 작업 ${aiTasks.length}개를 Todo 컬럼에 추가했습니다.`);
       setIsAiModalOpen(false);
       setAiTasks([]);
+      setAiAgentInfo(null);
     } catch (error) {
       console.error(error);
       setAiError("AI 작업 생성 실패");
@@ -146,6 +165,7 @@ export function KanbanLayout({ projectId }: { projectId: string }) {
               createTask={board.createTask}
               onOpenCreateColumn={() => setIsColumnModalOpen(true)}
               updateTask={board.updateTask}
+              updateTaskMemo={board.updateTaskMemo}
               deleteTask={board.deleteTask}
             />}
             <div className="pointer-events-none absolute bottom-4 left-4 z-10 space-y-1">
@@ -198,7 +218,7 @@ export function KanbanLayout({ projectId }: { projectId: string }) {
         </div>
       </div>
       {isAiPromptOpen ? <AiTaskPromptModal isGenerating={isAiLoading} onClose={() => setIsAiPromptOpen(false)} onSubmit={handleGenerateAiTasks} /> : null}
-      {isAiModalOpen ? <AiTaskPreviewModal tasks={aiTasks} isAdding={isAiAdding} onClose={() => setIsAiModalOpen(false)} onAddAll={handleAddAllAiTasks} /> : null}
+      {isAiModalOpen ? <AiTaskPreviewModal tasks={aiTasks} isAdding={isAiAdding} onClose={() => setIsAiModalOpen(false)} onAddAll={handleAddAllAiTasks} selectedAgentType={aiAgentInfo?.selectedAgentType} confidence={aiAgentInfo?.confidence} reason={aiAgentInfo?.reason} /> : null}
       {isColumnModalOpen ? <ColumnCreateModal isCreating={isColumnCreating} onClose={() => setIsColumnModalOpen(false)} onCreate={handleCreateColumn} /> : null}
     </div>
   );

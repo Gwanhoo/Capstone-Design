@@ -22,6 +22,12 @@ const taskSchema = new mongoose.Schema(
       default: '',
       trim: true,
     },
+    memo: {
+      type: String,
+      default: '',
+      trim: true,
+      maxlength: 5000,
+    },
     priority: {
       type: String,
       enum: ['urgent', 'high', 'medium', 'low'],

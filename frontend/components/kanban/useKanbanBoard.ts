@@ -2,14 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { KanbanColumnType, Task, TaskInput } from "./types";
-import { createTask as createTaskApi, deleteTask as deleteTaskApi, getTasksByProject, moveTask as moveTaskApi, updateTask as updateTaskApi } from "@/lib/api/taskApi";
+import { createTask as createTaskApi, deleteTask as deleteTaskApi, getTasksByProject, moveTask as moveTaskApi, updateTask as updateTaskApi, updateTaskMemo as updateTaskMemoApi } from "@/lib/api/taskApi";
 import { createProjectColumn, getProjectColumns, ProjectColumn } from "@/lib/api/projectApi";
 import { connectSocket, disconnectSocket } from "@/lib/socket/client";
 
 type DragMeta = { taskId: string; fromColumnId: string; fromIndex: number } | null;
 
 type BackendPriority = "urgent" | "high" | "medium" | "low";
-type SocketTask = { _id: string; projectId: string; columnId: string; title: string; description: string; priority: BackendPriority; assignee: string; progress: number; dueDate: string | null; aiStatus: string; order: number; createdAt: string; updatedAt: string };
+type SocketTask = { _id: string; projectId: string; columnId: string; title: string; description: string; memo?: string; priority: BackendPriority; assignee: string; progress: number; dueDate: string | null; aiStatus: string; order: number; createdAt: string; updatedAt: string };
 
 const priorityToFrontend: Record<BackendPriority, Task["priority"]> = { urgent: "긴급", high: "높음", medium: "보통", low: "낮음" };
 const toneByIndex: KanbanColumnType["tone"][] = ["slate", "primary", "tertiary"];
@@ -27,6 +27,7 @@ const mapSocketTask = (task: SocketTask): Task => ({
   order: task.order,
   title: task.title,
   description: task.description,
+  memo: task.memo ?? "",
   assignee: task.assignee,
   assigneeInitial: task.assignee.slice(0, 2) || "-",
   progress: task.progress,
@@ -164,6 +165,12 @@ export function useKanbanBoard(projectId: string) {
       setColumns((prev) => prev.filter((column) => column.id !== columnId));
     };
 
+    const handleProjectDeleted = ({ projectId: deletedProjectId }: { projectId: string }) => {
+      if (deletedProjectId === projectId) {
+        window.dispatchEvent(new CustomEvent("project:deleted", { detail: { projectId: deletedProjectId } }));
+      }
+    };
+
     socket.on("task:created", handleCreated);
     socket.on("task:updated", handleUpdated);
     socket.on("task:deleted", handleDeleted);
@@ -171,6 +178,7 @@ export function useKanbanBoard(projectId: string) {
     socket.on("column:created", handleColumnCreated);
     socket.on("column:updated", handleColumnUpdated);
     socket.on("column:deleted", handleColumnDeleted);
+    socket.on("project:deleted", handleProjectDeleted);
 
     return () => {
       socket.emit("leave-project", { projectId });
@@ -181,6 +189,7 @@ export function useKanbanBoard(projectId: string) {
       socket.off("column:created", handleColumnCreated);
       socket.off("column:updated", handleColumnUpdated);
       socket.off("column:deleted", handleColumnDeleted);
+      socket.off("project:deleted", handleProjectDeleted);
       disconnectSocket();
     };
   }, [projectId]);
@@ -272,6 +281,25 @@ export function useKanbanBoard(projectId: string) {
     }
   };
 
+  const updateTaskMemo = async (taskId: string, memo: string) => {
+    const previousTask = tasks[taskId];
+    if (!previousTask) {
+      setError("메모를 저장할 카드를 찾지 못했습니다.");
+      return;
+    }
+
+    setTasks((prev) => ({ ...prev, [taskId]: { ...prev[taskId], memo } }));
+    try {
+      const updated = await updateTaskMemoApi(taskId, memo);
+      setTasks((prev) => ({ ...prev, [taskId]: { ...prev[taskId], ...updated } }));
+    } catch (updateError) {
+      console.error(updateError);
+      setError("메모 저장에 실패했습니다. 이전 내용으로 되돌렸습니다.");
+      setTasks((prev) => ({ ...prev, [taskId]: previousTask }));
+      throw updateError;
+    }
+  };
+
   const deleteTask = async (taskId: string) => {
     const prevTasks = tasks;
     const prevColumns = columns;
@@ -292,5 +320,5 @@ export function useKanbanBoard(projectId: string) {
     }
   };
 
-  return { orderedColumns, tasks, dragMeta, dropColumnId, setDropColumnId, startDrag, moveTask, createTask, createColumn, updateTask, deleteTask, isLoading, error };
+  return { orderedColumns, tasks, dragMeta, dropColumnId, setDropColumnId, startDrag, moveTask, createTask, createColumn, updateTask, updateTaskMemo, deleteTask, isLoading, error };
 }
