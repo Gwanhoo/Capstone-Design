@@ -46,12 +46,12 @@ export const createInvitation = async (req, res) => {
 export const getMyInvitations = async (req, res) => {
   try {
     const invitations = await ProjectInvitation.find({ invitee: req.user?.userId, status: 'pending' })
-      .populate('project', '_id name description')
+      .populate('project', '_id name description isArchived')
       .populate('inviter', '_id name email')
       .sort({ createdAt: -1 })
       .lean();
 
-    const data = invitations.map((inv) => ({
+    const data = invitations.filter((inv) => inv.project?.isArchived !== true).map((inv) => ({
       id: String(inv._id),
       status: inv.status,
       createdAt: inv.createdAt,
@@ -88,6 +88,7 @@ const processInvitation = async (req, res, nextStatus) => {
     if (nextStatus === 'accepted') {
       const project = await Project.findById(invitation.project);
       if (!project) return res.status(404).json({ success: false, message: 'project not found' });
+      if (project.isArchived === true) return res.status(403).json({ success: false, message: '보관된 프로젝트는 프로젝트 생성자만 접근할 수 있습니다.' });
       const inviteeId = String(invitation.invitee);
       if (!project.members.includes(inviteeId)) {
         project.members.push(inviteeId);

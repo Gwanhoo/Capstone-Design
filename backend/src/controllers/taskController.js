@@ -34,9 +34,9 @@ export const getTasksByProject = async (req, res) => {
   const { projectId } = req.params;
 
   try {
-    const { project, allowed } = await findAccessibleProject(projectId, req.user?.userId);
+    const { project, allowed, message } = await findAccessibleProject(projectId, req.user?.userId);
     if (!project) return res.status(404).json({ success: false, message: 'project not found' });
-    if (!allowed) return res.status(403).json({ success: false, message: 'forbidden' });
+    if (!allowed) return res.status(403).json({ success: false, message: message ?? 'forbidden' });
 
     const tasks = await Task.find({ projectId }).sort({ order: 1, createdAt: 1 });
 
@@ -53,9 +53,9 @@ export const createTask = async (req, res) => {
   const { projectId } = req.params;
 
   try {
-    const { project, allowed } = await findAccessibleProject(projectId, req.user?.userId);
+    const { project, allowed, message } = await findAccessibleProject(projectId, req.user?.userId);
     if (!project) return res.status(404).json({ success: false, message: 'project not found' });
-    if (!allowed) return res.status(403).json({ success: false, message: 'forbidden' });
+    if (!allowed) return res.status(403).json({ success: false, message: message ?? 'forbidden' });
 
     const task = await Task.create({
       ...req.body,
@@ -76,9 +76,9 @@ export const createTask = async (req, res) => {
 const getAuthorizedTask = async (taskId, userId) => {
   const task = await Task.findById(taskId);
   if (!task) return { task: null, project: null, allowed: false, notFound: true };
-  const { project, allowed } = await findAccessibleProject(task.projectId, userId);
+  const { project, allowed, message } = await findAccessibleProject(task.projectId, userId);
   if (!project) return { task: null, project: null, allowed: false, notFound: true };
-  return { task, project, allowed, notFound: false };
+  return { task, project, allowed, message, notFound: false };
 };
 
 const getProjectColumnIds = (project) => new Set(
@@ -99,7 +99,7 @@ export const updateTask = async (req, res) => {
   try {
     const auth = await getAuthorizedTask(taskId, req.user?.userId);
     if (auth.notFound) return res.status(404).json({ success: false, message: 'task not found' });
-    if (!auth.allowed) return res.status(403).json({ success: false, message: 'forbidden' });
+    if (!auth.allowed) return res.status(403).json({ success: false, message: auth.message ?? 'forbidden' });
 
     const task = await Task.findByIdAndUpdate(taskId, req.body, {
       new: true,
@@ -117,13 +117,37 @@ export const updateTask = async (req, res) => {
   }
 };
 
+
+export const updateTaskMemo = async (req, res) => {
+  const { taskId } = req.params;
+  const memo = String(req.body?.memo ?? '');
+
+  try {
+    const auth = await getAuthorizedTask(taskId, req.user?.userId);
+    if (auth.notFound) return res.status(404).json({ success: false, message: 'task not found' });
+    if (!auth.allowed) return res.status(403).json({ success: false, message: auth.message ?? 'forbidden' });
+
+    auth.task.memo = memo;
+    await auth.task.save();
+
+    emitTaskEvent(req, 'task:updated', auth.task.projectId, auth.task);
+
+    return res.status(200).json({
+      success: true,
+      data: auth.task,
+    });
+  } catch (error) {
+    return handleError(res, error);
+  }
+};
+
 export const deleteTask = async (req, res) => {
   const { taskId } = req.params;
 
   try {
     const auth = await getAuthorizedTask(taskId, req.user?.userId);
     if (auth.notFound) return res.status(404).json({ success: false, message: 'task not found' });
-    if (!auth.allowed) return res.status(403).json({ success: false, message: 'forbidden' });
+    if (!auth.allowed) return res.status(403).json({ success: false, message: auth.message ?? 'forbidden' });
 
     const task = await Task.findByIdAndDelete(taskId);
 
@@ -152,7 +176,7 @@ export const moveTask = async (req, res) => {
   try {
     const auth = await getAuthorizedTask(taskId, req.user?.userId);
     if (auth.notFound) return res.status(404).json({ success: false, message: 'task not found' });
-    if (!auth.allowed) return res.status(403).json({ success: false, message: 'forbidden' });
+    if (!auth.allowed) return res.status(403).json({ success: false, message: auth.message ?? 'forbidden' });
 
     const targetColumnId = columnId !== undefined ? String(columnId) : auth.task.columnId;
     if (!getProjectColumnIds(auth.project).has(targetColumnId)) {

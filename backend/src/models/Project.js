@@ -39,6 +39,14 @@ const projectSchema = new mongoose.Schema(
       enum: ['active', 'archived'],
       default: 'active',
     },
+    isArchived: {
+      type: Boolean,
+      default: false,
+    },
+    archivedAt: {
+      type: Date,
+      default: null,
+    },
     createdBy: {
       type: String,
       required: true,

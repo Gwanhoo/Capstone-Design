@@ -7,4 +7,8 @@ export interface ProjectItem {
   description: string;
   members: number;
   updatedAt: string;
+  createdBy: string;
+  isOwner: boolean;
+  isArchived: boolean;
+  archivedAt?: string | null;
 }

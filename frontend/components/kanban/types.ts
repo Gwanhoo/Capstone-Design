@@ -6,6 +6,7 @@ export type Task = {
   order: number;
   title: string;
   description: string;
+  memo?: string;
   assignee: string;
   assigneeInitial: string;
   progress: number;

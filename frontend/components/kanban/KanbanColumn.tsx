@@ -11,12 +11,12 @@ const toneClass = { slate: "bg-outline", primary: "bg-primary", tertiary: "bg-te
 type Props = {
   column: KanbanColumnType; tasks: Task[]; activeTaskId: string | null; isDropActive: boolean;
   onDropTask: (columnId: string, index?: number) => void; onDragTask: (taskId: string, columnId: string, index: number) => void;
-  onOpenTask: (taskId: string) => void; onDeleteTask: (taskId: string) => void;
+  onOpenTask: (taskId: string) => void; onOpenTaskMemo: (taskId: string) => void; onDeleteTask: (taskId: string) => void;
   onAddTask: (columnId: string, payload: TaskInput) => void;
   onSetDropActive: (columnId: string | null) => void;
 };
 
-export function KanbanColumn({ column, tasks, onDropTask, onDragTask, activeTaskId, isDropActive, onOpenTask, onDeleteTask, onAddTask, onSetDropActive }: Props) {
+export function KanbanColumn({ column, tasks, onDropTask, onDragTask, activeTaskId, isDropActive, onOpenTask, onOpenTaskMemo, onDeleteTask, onAddTask, onSetDropActive }: Props) {
   const [adding, setAdding] = useState(false);
   return <section onDragOver={(e) => { e.preventDefault(); onSetDropActive(column.id); }} onDragLeave={() => onSetDropActive(null)} onDrop={() => onDropTask(column.id)} className={`flex max-h-[calc(100vh-7rem)] w-[264px] min-w-[264px] flex-col rounded-xl border p-2.5 ${isDropActive ? "border-primary/40 bg-primary/5" : "border-white/10 bg-white/[0.04]"}`}>
     <div className="mb-2 flex shrink-0 items-center justify-between px-1">
@@ -24,6 +24,6 @@ export function KanbanColumn({ column, tasks, onDropTask, onDragTask, activeTask
       <button onClick={() => setAdding((v) => !v)} className="rounded-md p-1 text-outline transition hover:bg-white/10 hover:text-on-surface"><Plus className="h-4 w-4" /></button>
     </div>
     {adding && <div className="mb-2 shrink-0 rounded-xl border border-white/10 bg-black/20 p-2.5"><TaskForm onCancel={() => setAdding(false)} onSubmit={(payload) => { onAddTask(column.id, payload); setAdding(false); }} /></div>}
-    <div className="min-h-24 flex-1 space-y-2 overflow-y-auto pr-1">{tasks.map((task, index) => <div key={task.id} draggable onDragStart={() => onDragTask(task.id, column.id, index)} onDragOver={(e) => e.preventDefault()} onDrop={(event) => { event.stopPropagation(); onDropTask(column.id, index); }}><TaskCard task={task} isDragging={activeTaskId === task.id} onClick={() => onOpenTask(task.id)} onDelete={() => onDeleteTask(task.id)} /></div>)}</div>
+    <div className="min-h-24 flex-1 space-y-2 overflow-y-auto pr-1">{tasks.map((task, index) => <div key={task.id} draggable onDragStart={() => onDragTask(task.id, column.id, index)} onDragOver={(e) => e.preventDefault()} onDrop={(event) => { event.stopPropagation(); onDropTask(column.id, index); }}><TaskCard task={task} isDragging={activeTaskId === task.id} onClick={() => onOpenTask(task.id)} onMemo={() => onOpenTaskMemo(task.id)} onDelete={() => onDeleteTask(task.id)} /></div>)}</div>
   </section>;
 }
