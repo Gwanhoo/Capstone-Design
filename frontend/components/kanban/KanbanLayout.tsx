@@ -61,6 +61,16 @@ export function KanbanLayout({ projectId }: { projectId: string }) {
   }, [projectId, router]);
 
   useEffect(() => {
+    const onProjectDeleted = (event: Event) => {
+      const deletedProjectId = (event as CustomEvent<{ projectId: string }>).detail?.projectId;
+      if (deletedProjectId === projectId) router.replace("/dashboard/projects");
+    };
+
+    window.addEventListener("project:deleted", onProjectDeleted);
+    return () => window.removeEventListener("project:deleted", onProjectDeleted);
+  }, [projectId, router]);
+
+  useEffect(() => {
     const loadProject = async () => {
       try {
         setIsProjectLoading(true);
