@@ -2,7 +2,7 @@ import { Task, TaskInput } from "@/components/kanban/types";
 import { apiRequest } from "@/lib/api/client";
 
 type BackendPriority = "urgent" | "high" | "medium" | "low";
-type BackendTask = { _id: string; projectId: string; columnId: string; title: string; description: string; priority: BackendPriority; assignee: string; progress: number; dueDate: string | null; aiStatus: string; order: number; createdAt: string; updatedAt: string };
+type BackendTask = { _id: string; projectId: string; columnId: string; title: string; description: string; memo?: string; priority: BackendPriority; assignee: string; progress: number; dueDate: string | null; aiStatus: string; order: number; createdAt: string; updatedAt: string };
 
 const priorityToFrontend: Record<BackendPriority, Task["priority"]> = { urgent: "긴급", high: "높음", medium: "보통", low: "낮음" };
 const priorityToBackend: Record<Task["priority"], BackendPriority> = { 긴급: "urgent", 높음: "high", 보통: "medium", 낮음: "low" };
@@ -27,6 +27,7 @@ const mapTaskFromBackend = (task: BackendTask): Task => ({
   order: task.order,
   title: task.title,
   description: task.description,
+  memo: task.memo ?? "",
   assignee: task.assignee,
   assigneeInitial: task.assignee.slice(0, 2) || "-",
   progress: task.progress,
@@ -64,5 +65,13 @@ export const deleteTask = async (taskId: string) => {
 
 export const moveTask = async (taskId: string, payload: { columnId: string; order: number }) => {
   const data = await apiRequest<BackendTask>(`/api/tasks/${taskId}/move`, { method: "PATCH", body: JSON.stringify(payload) });
+  return mapTaskFromBackend(data);
+};
+
+export const updateTaskMemo = async (taskId: string, memo: string) => {
+  const data = await apiRequest<BackendTask>(`/api/tasks/${taskId}/memo`, {
+    method: "PATCH",
+    body: JSON.stringify({ memo }),
+  });
   return mapTaskFromBackend(data);
 };

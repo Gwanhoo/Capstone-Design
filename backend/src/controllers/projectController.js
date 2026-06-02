@@ -1,8 +1,12 @@
 import mongoose from 'mongoose';
 import Project from '../models/Project.js';
 import User from '../models/User.js';
+import Task from '../models/Task.js';
+import ChatMessage from '../models/ChatMessage.js';
+import ProjectInvitation from '../models/ProjectInvitation.js';
 import { canAccessProject } from '../utils/projectAccess.js';
 import { getProjectRoomName } from '../sockets/index.js';
+import { analyzeBoardWithOpenAi, buildBoardSnapshot, createFallbackAnalysis } from '../ai/boardAnalysisService.js';
 import {
   createProjectColumn,
   deleteProjectColumn,
@@ -95,6 +99,31 @@ export const updateProject = async (req, res) => {
     await project.save();
 
     return res.status(200).json({ success: true, data: project });
+  } catch (error) {
+    return handleError(res, error);
+  }
+};
+
+
+export const deleteProject = async (req, res) => {
+  const { projectId } = req.params;
+
+  try {
+    const project = await Project.findById(projectId);
+    if (!project) return res.status(404).json({ success: false, message: 'project not found' });
+    if (!canAccessProject(project, req.user?.userId)) return res.status(403).json({ success: false, message: 'forbidden' });
+
+    await Promise.all([
+      Task.deleteMany({ projectId }),
+      ChatMessage.deleteMany({ project: project._id }),
+      ProjectInvitation.deleteMany({ project: project._id }),
+    ]);
+    await Project.findByIdAndDelete(projectId);
+
+    const io = req.app.get('io');
+    io?.to(getProjectRoomName(projectId)).emit('project:deleted', { projectId });
+
+    return res.status(200).json({ success: true, data: { projectId } });
   } catch (error) {
     return handleError(res, error);
   }
@@ -204,6 +233,37 @@ export const getProjectColumns = async (req, res) => {
     if (failure) return failure;
 
     return res.status(200).json({ success: true, data: result.columns });
+  } catch (error) {
+    return handleError(res, error);
+  }
+};
+
+
+export const analyzeProjectBoard = async (req, res) => {
+  const { projectId } = req.params;
+
+  try {
+    const result = await getColumnsForProject(projectId, req.user?.userId);
+    const failure = handleColumnServiceResult(res, result);
+    if (failure) return failure;
+
+    const tasks = await Task.find({ projectId }).sort({ columnId: 1, order: 1, createdAt: 1 });
+    const snapshot = buildBoardSnapshot({ project: result.project, columns: result.columns, tasks });
+
+    try {
+      const analysis = await analyzeBoardWithOpenAi(snapshot);
+      return res.status(200).json({ success: true, data: { ...analysis, snapshot } });
+    } catch (aiError) {
+      console.error('OpenAI board analysis failed:', aiError);
+      return res.status(200).json({
+        success: true,
+        data: {
+          ...createFallbackAnalysis(snapshot),
+          snapshot,
+          fallback: true,
+        },
+      });
+    }
   } catch (error) {
     return handleError(res, error);
   }
