@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { CalendarDays, Ellipsis } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { CalendarDays, Ellipsis, StickyNote } from "lucide-react";
 import { Task } from "./types";
 import { TaskMenu } from "./TaskMenu";
 
@@ -12,15 +12,43 @@ const priorityTone = {
   낮음: "bg-surface-container-high text-on-surface-variant"
 };
 
-export function TaskCard({ task, isDragging = false, onClick, onDelete }: { task: Task; isDragging?: boolean; onClick: () => void; onDelete: () => void }) {
+type Props = {
+  task: Task;
+  isDragging?: boolean;
+  onClick: () => void;
+  onMemo?: () => void;
+  onDelete: () => void;
+};
+
+export function TaskCard({ task, isDragging = false, onClick, onMemo, onDelete }: Props) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const onPointerDown = (event: MouseEvent | TouchEvent) => {
+      if (!menuRef.current?.contains(event.target as Node)) setMenuOpen(false);
+    };
+
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("touchstart", onPointerDown);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("touchstart", onPointerDown);
+    };
+  }, [menuOpen]);
+
   return (
     <article onClick={onClick} className={`relative rounded-lg border border-white/10 bg-white/5 p-3 backdrop-blur-lg transition ${isDragging ? "scale-[1.02] border-primary/40 shadow-2xl" : "hover:border-primary/30 hover:shadow-lg"}`}>
       <div className="mb-2 flex items-center justify-between">
-        <span className={`rounded-md px-2 py-1 text-[10px] font-bold ${priorityTone[task.priority]}`}>{task.priority}</span>
-        <div className="relative">
-          <button onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v); }} className="rounded-md p-1 text-outline hover:bg-white/10"><Ellipsis className="h-4 w-4" /></button>
-          {menuOpen && <TaskMenu onDelete={() => { setMenuOpen(false); onDelete(); }} />}
+        <div className="flex items-center gap-1.5">
+          <span className={`rounded-md px-2 py-1 text-[10px] font-bold ${priorityTone[task.priority]}`}>{task.priority}</span>
+          {task.memo ? <StickyNote className="h-3.5 w-3.5 text-primary" aria-label="메모 있음" /> : null}
+        </div>
+        <div ref={menuRef} className="relative">
+          <button onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v); }} className="rounded-md p-1 text-outline hover:bg-white/10" aria-label={`${task.title} 카드 메뉴 열기`}><Ellipsis className="h-4 w-4" /></button>
+          {menuOpen && <TaskMenu onMemo={onMemo ? () => { setMenuOpen(false); onMemo(); } : undefined} onDelete={() => { setMenuOpen(false); onDelete(); }} />}
         </div>
       </div>
       <h4 className="line-clamp-2 text-[13px] font-semibold leading-snug text-on-surface">{task.title}</h4>

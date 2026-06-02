@@ -20,9 +20,17 @@ type Props = {
   isAdding: boolean;
   onClose: () => void;
   onAddAll: () => void;
+  selectedAgentType?: string | null;
+  confidence?: number | null;
+  reason?: string | null;
 };
 
-export function AiTaskPreviewModal({ tasks, isAdding, onClose, onAddAll }: Props) {
+const formatConfidence = (confidence?: number | null) => {
+  if (typeof confidence !== "number" || Number.isNaN(confidence)) return "-";
+  return `${Math.round(confidence * 100)}%`;
+};
+
+export function AiTaskPreviewModal({ tasks, isAdding, onClose, onAddAll, selectedAgentType, confidence, reason }: Props) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4 backdrop-blur-sm">
       <div className="w-full max-w-2xl overflow-hidden rounded-3xl border border-white/10 bg-surface-container-high shadow-2xl">
@@ -33,6 +41,12 @@ export function AiTaskPreviewModal({ tasks, isAdding, onClose, onAddAll }: Props
             </div>
             <h2 className="mt-2 text-xl font-bold text-on-surface">생성된 작업 {tasks.length}개</h2>
             <p className="mt-1 text-sm text-on-surface-variant">검토 후 Todo 컬럼에 한 번에 추가할 수 있습니다.</p>
+            {selectedAgentType ? (
+              <div className="mt-3 rounded-2xl border border-primary/20 bg-primary/10 px-3 py-2 text-xs text-on-surface-variant">
+                <p className="font-semibold text-primary">선택 Agent: {selectedAgentType} · 신뢰도 {formatConfidence(confidence)}</p>
+                {reason ? <p className="mt-1 leading-5">{reason}</p> : null}
+              </div>
+            ) : null}
           </div>
           <button onClick={onClose} className="rounded-xl p-2 text-on-surface-variant transition hover:bg-white/10 hover:text-on-surface" disabled={isAdding}>
             <X className="h-5 w-5" />

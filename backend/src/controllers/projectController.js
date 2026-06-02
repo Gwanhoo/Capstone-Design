@@ -1,6 +1,9 @@
 import mongoose from 'mongoose';
 import Project from '../models/Project.js';
 import User from '../models/User.js';
+import Task from '../models/Task.js';
+import ChatMessage from '../models/ChatMessage.js';
+import ProjectInvitation from '../models/ProjectInvitation.js';
 import { canAccessProject } from '../utils/projectAccess.js';
 import { getProjectRoomName } from '../sockets/index.js';
 import {
@@ -95,6 +98,31 @@ export const updateProject = async (req, res) => {
     await project.save();
 
     return res.status(200).json({ success: true, data: project });
+  } catch (error) {
+    return handleError(res, error);
+  }
+};
+
+
+export const deleteProject = async (req, res) => {
+  const { projectId } = req.params;
+
+  try {
+    const project = await Project.findById(projectId);
+    if (!project) return res.status(404).json({ success: false, message: 'project not found' });
+    if (!canAccessProject(project, req.user?.userId)) return res.status(403).json({ success: false, message: 'forbidden' });
+
+    await Promise.all([
+      Task.deleteMany({ projectId }),
+      ChatMessage.deleteMany({ project: project._id }),
+      ProjectInvitation.deleteMany({ project: project._id }),
+    ]);
+    await Project.findByIdAndDelete(projectId);
+
+    const io = req.app.get('io');
+    io?.to(getProjectRoomName(projectId)).emit('project:deleted', { projectId });
+
+    return res.status(200).json({ success: true, data: { projectId } });
   } catch (error) {
     return handleError(res, error);
   }
