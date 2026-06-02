@@ -5,6 +5,8 @@ export type Project = {
   name: string;
   description: string;
   status: "active" | "archived";
+  isArchived?: boolean;
+  archivedAt?: string | null;
   createdBy: string;
   memberCount: number;
   createdAt: string;
@@ -23,6 +25,8 @@ type BackendProject = {
   name: string;
   description: string;
   status: "active" | "archived";
+  isArchived?: boolean;
+  archivedAt?: string | null;
   createdBy: string;
   members?: string[];
   memberCount: number;
@@ -46,6 +50,8 @@ const mapProject = (project: BackendProject): Project => ({
   name: project.name,
   description: project.description,
   status: project.status,
+  isArchived: project.isArchived ?? project.status === "archived",
+  archivedAt: project.archivedAt ?? null,
   createdBy: project.createdBy,
   memberCount: project.memberCount,
   createdAt: project.createdAt,
@@ -59,8 +65,11 @@ const mapMember = (member: BackendMember, createdBy: string): ProjectMember => (
   isOwner: String(member._id) === createdBy,
 });
 
-export const getProjects = async (search?: string) => {
-  const query = search ? `?search=${encodeURIComponent(search)}` : "";
+export const getProjects = async (search?: string, archived: "false" | "true" | "all" = "false") => {
+  const params = new URLSearchParams();
+  if (search) params.set("search", search);
+  if (archived !== "false") params.set("archived", archived);
+  const query = params.toString() ? `?${params.toString()}` : "";
   const data = await apiRequest<BackendProject[]>(`/api/projects${query}`);
   return data.map(mapProject);
 };
@@ -82,6 +91,20 @@ export const deleteProject = async (projectId: string) => {
   await apiRequest<{ projectId: string }>(`/api/projects/${projectId}`, {
     method: "DELETE",
   });
+};
+
+export const archiveProject = async (projectId: string) => {
+  const data = await apiRequest<BackendProject>(`/api/projects/${projectId}/archive`, {
+    method: "PATCH",
+  });
+  return mapProject(data);
+};
+
+export const unarchiveProject = async (projectId: string) => {
+  const data = await apiRequest<BackendProject>(`/api/projects/${projectId}/unarchive`, {
+    method: "PATCH",
+  });
+  return mapProject(data);
 };
 
 export const getProjectMembers = async (projectId: string) => {

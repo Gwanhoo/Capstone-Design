@@ -6,7 +6,7 @@ const priorityRank = { urgent: 0, high: 1, medium: 2, low: 3 };
 export const getRecentTasks = async (req, res) => {
   try {
     const userId = req.user?.userId;
-    const projects = await Project.find({ $or: [{ createdBy: userId }, { members: userId }] }).select('_id name columns');
+    const projects = await Project.find({ $and: [{ $or: [{ createdBy: userId }, { members: userId }] }, { isArchived: { $ne: true } }] }).select('_id name columns');
     const projectMap = new Map(projects.map((project) => [project._id.toString(), project]));
 
     const tasks = await Task.find({ projectId: { $in: Array.from(projectMap.keys()) } })

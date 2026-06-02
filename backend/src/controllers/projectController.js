@@ -4,7 +4,7 @@ import User from '../models/User.js';
 import Task from '../models/Task.js';
 import ChatMessage from '../models/ChatMessage.js';
 import ProjectInvitation from '../models/ProjectInvitation.js';
-import { canAccessProject } from '../utils/projectAccess.js';
+import { canAccessProject, getProjectAccessMessage, isProjectOwner } from '../utils/projectAccess.js';
 import { getProjectRoomName } from '../sockets/index.js';
 import { analyzeBoardWithOpenAi, buildBoardSnapshot, createFallbackAnalysis } from '../ai/boardAnalysisService.js';
 import {
@@ -32,9 +32,18 @@ export const getProjects = async (req, res) => {
   try {
     const userId = req.user?.userId;
     const search = String(req.query.search ?? '').trim();
-    const query = { $or: [{ createdBy: userId }, { members: userId }] };
+    const archived = String(req.query.archived ?? 'false').toLowerCase();
+    const accessQuery = archived === 'true'
+      ? { createdBy: userId }
+      : { $or: [{ createdBy: userId }, { members: userId }] };
+    const archiveQuery = archived === 'all'
+      ? { $or: [{ isArchived: { $ne: true } }, { createdBy: userId, isArchived: true }] }
+      : archived === 'true'
+        ? { isArchived: true }
+        : { isArchived: { $ne: true } };
+    const query = { $and: [accessQuery, archiveQuery] };
     if (search) {
-      query.$and = [{ $or: [{ name: { $regex: search, $options: 'i' } }, { description: { $regex: search, $options: 'i' } }] }];
+      query.$and.push({ $or: [{ name: { $regex: search, $options: 'i' } }, { description: { $regex: search, $options: 'i' } }] });
     }
     const projects = await Project.find(query).sort({ createdAt: -1 });
     return res.status(200).json({ success: true, data: projects });
@@ -49,7 +58,7 @@ export const getProjectById = async (req, res) => {
   try {
     const project = await Project.findById(projectId);
     if (!project) return res.status(404).json({ success: false, message: 'project not found' });
-    if (!canAccessProject(project, req.user?.userId)) return res.status(403).json({ success: false, message: 'forbidden' });
+    if (!canAccessProject(project, req.user?.userId)) return res.status(403).json({ success: false, message: getProjectAccessMessage(project, req.user?.userId) });
 
     return res.status(200).json({ success: true, data: project });
   } catch (error) {
@@ -92,7 +101,7 @@ export const updateProject = async (req, res) => {
   try {
     const project = await Project.findById(projectId);
     if (!project) return res.status(404).json({ success: false, message: 'project not found' });
-    if (!canAccessProject(project, req.user?.userId)) return res.status(403).json({ success: false, message: 'forbidden' });
+    if (!canAccessProject(project, req.user?.userId)) return res.status(403).json({ success: false, message: getProjectAccessMessage(project, req.user?.userId) });
 
     if (name !== undefined) project.name = String(name).trim();
     if (description !== undefined) project.description = String(description).trim();
@@ -111,7 +120,7 @@ export const deleteProject = async (req, res) => {
   try {
     const project = await Project.findById(projectId);
     if (!project) return res.status(404).json({ success: false, message: 'project not found' });
-    if (!canAccessProject(project, req.user?.userId)) return res.status(403).json({ success: false, message: 'forbidden' });
+    if (!isProjectOwner(project, req.user?.userId)) return res.status(403).json({ success: false, message: '프로젝트 삭제는 프로젝트 생성자만 가능합니다.' });
 
     await Promise.all([
       Task.deleteMany({ projectId }),
@@ -129,13 +138,53 @@ export const deleteProject = async (req, res) => {
   }
 };
 
+
+const emitProjectUpdatedEvent = (req, projectId, payload) => {
+  const io = req.app.get('io');
+  if (!io) return;
+  io.to(getProjectRoomName(projectId)).emit('project:updated', payload);
+};
+
+const updateProjectArchiveState = async (req, res, isArchived) => {
+  const { projectId } = req.params;
+
+  try {
+    const project = await Project.findById(projectId);
+    if (!project) return res.status(404).json({ success: false, message: 'project not found' });
+    if (!isProjectOwner(project, req.user?.userId)) {
+      return res.status(403).json({ success: false, message: isArchived ? '프로젝트 보관은 프로젝트 생성자만 가능합니다.' : '프로젝트 보관 해제는 프로젝트 생성자만 가능합니다.' });
+    }
+
+    project.isArchived = isArchived;
+    project.archivedAt = isArchived ? new Date() : null;
+    project.status = isArchived ? 'archived' : 'active';
+    await project.save();
+
+    const payload = {
+      projectId: project._id.toString(),
+      isArchived: project.isArchived,
+      archivedAt: project.archivedAt,
+      createdBy: project.createdBy,
+    };
+    emitProjectUpdatedEvent(req, projectId, payload);
+
+    return res.status(200).json({ success: true, data: project });
+  } catch (error) {
+    return handleError(res, error);
+  }
+};
+
+export const archiveProject = async (req, res) => updateProjectArchiveState(req, res, true);
+
+export const unarchiveProject = async (req, res) => updateProjectArchiveState(req, res, false);
+
 export const getProjectDocs = async (req, res) => {
   const { projectId } = req.params;
 
   try {
     const project = await Project.findById(projectId);
     if (!project) return res.status(404).json({ success: false, message: 'project not found' });
-    if (!canAccessProject(project, req.user?.userId)) return res.status(403).json({ success: false, message: 'forbidden' });
+    if (!canAccessProject(project, req.user?.userId)) return res.status(403).json({ success: false, message: getProjectAccessMessage(project, req.user?.userId) });
 
     return res.status(200).json({ success: true, data: { docs: project.docs || '' } });
   } catch (error) {
@@ -150,7 +199,7 @@ export const updateProjectDocs = async (req, res) => {
   try {
     const project = await Project.findById(projectId);
     if (!project) return res.status(404).json({ success: false, message: 'project not found' });
-    if (!canAccessProject(project, req.user?.userId)) return res.status(403).json({ success: false, message: 'forbidden' });
+    if (!canAccessProject(project, req.user?.userId)) return res.status(403).json({ success: false, message: getProjectAccessMessage(project, req.user?.userId) });
 
     project.docs = docs;
     await project.save();
@@ -167,7 +216,7 @@ export const getProjectMembers = async (req, res) => {
   try {
     const project = await Project.findById(projectId);
     if (!project) return res.status(404).json({ success: false, message: 'project not found' });
-    if (!canAccessProject(project, req.user?.userId)) return res.status(403).json({ success: false, message: 'forbidden' });
+    if (!canAccessProject(project, req.user?.userId)) return res.status(403).json({ success: false, message: getProjectAccessMessage(project, req.user?.userId) });
 
     const memberIds = Array.from(new Set([project.createdBy, ...(project.members || [])]));
     const users = await User.find({ _id: { $in: memberIds } }).select('_id name email');
@@ -220,7 +269,7 @@ const emitColumnEvent = (req, eventName, projectId, payload) => {
 
 const handleColumnServiceResult = (res, result) => {
   if (!result.project) return res.status(404).json({ success: false, message: 'project not found' });
-  if (!result.allowed) return res.status(403).json({ success: false, message: 'forbidden' });
+  if (!result.allowed) return res.status(403).json({ success: false, message: result.message ?? 'forbidden' });
   return null;
 };
 

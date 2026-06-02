@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/components/providers/AuthProvider";
 import { MessageSquareText, X } from "lucide-react";
 import { getProjectById, Project } from "@/lib/api/projectApi";
 import { AiGeneratedTask, BoardAnalysisResult, analyzeProjectBoard, decomposeProjectTasks } from "@/lib/api/aiApi";
@@ -30,6 +31,7 @@ const isDoneColumnTitle = (title: string) => doneColumnTitles.has(title.trim().t
 
 export function KanbanLayout({ projectId }: { projectId: string }) {
   const router = useRouter();
+  const { user } = useAuth();
   const board = useKanbanBoard(projectId);
   const [project, setProject] = useState<Project | null>(null);
   const [isProjectLoading, setIsProjectLoading] = useState(true);
@@ -56,19 +58,22 @@ export function KanbanLayout({ projectId }: { projectId: string }) {
       if (deletedProjectId === projectId) router.replace("/dashboard/projects");
     };
 
-    window.addEventListener("project:deleted", onProjectDeleted);
-    return () => window.removeEventListener("project:deleted", onProjectDeleted);
-  }, [projectId, router]);
-
-  useEffect(() => {
-    const onProjectDeleted = (event: Event) => {
-      const deletedProjectId = (event as CustomEvent<{ projectId: string }>).detail?.projectId;
-      if (deletedProjectId === projectId) router.replace("/dashboard/projects");
+    const onProjectArchived = (event: Event) => {
+      const detail = (event as CustomEvent<{ projectId: string; createdBy?: string }>).detail;
+      const archivedProjectId = detail?.projectId;
+      if (archivedProjectId === projectId && detail?.createdBy !== user?.id) {
+        setProjectError("프로젝트가 보관되어 접근할 수 없습니다.");
+        router.replace("/dashboard/projects");
+      }
     };
 
     window.addEventListener("project:deleted", onProjectDeleted);
-    return () => window.removeEventListener("project:deleted", onProjectDeleted);
-  }, [projectId, router]);
+    window.addEventListener("project:archived", onProjectArchived);
+    return () => {
+      window.removeEventListener("project:deleted", onProjectDeleted);
+      window.removeEventListener("project:archived", onProjectArchived);
+    };
+  }, [projectId, router, user?.id]);
 
   useEffect(() => {
     const loadProject = async () => {

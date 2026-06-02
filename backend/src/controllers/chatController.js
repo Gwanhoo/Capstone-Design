@@ -31,9 +31,9 @@ export const getProjectMessages = async (req, res) => {
   const limit = Math.min(Math.max(Number(req.query.limit) || 50, 1), 200);
 
   try {
-    const { project, allowed } = await findAccessibleProject(projectId, req.user?.userId);
+    const { project, allowed, message: accessMessage } = await findAccessibleProject(projectId, req.user?.userId);
     if (!project) return res.status(404).json({ success: false, message: 'project not found' });
-    if (!allowed) return res.status(403).json({ success: false, message: 'forbidden' });
+    if (!allowed) return res.status(403).json({ success: false, message: accessMessage ?? 'forbidden' });
 
     const messages = await ChatMessage.find({ project: project._id, isDeleted: false })
       .sort({ createdAt: -1 })
@@ -69,9 +69,9 @@ export const postProjectMessage = async (req, res) => {
   }
 
   try {
-    const { project, allowed } = await findAccessibleProject(projectId, req.user?.userId);
+    const { project, allowed, message: accessMessage } = await findAccessibleProject(projectId, req.user?.userId);
     if (!project) return res.status(404).json({ success: false, message: 'project not found' });
-    if (!allowed) return res.status(403).json({ success: false, message: 'forbidden' });
+    if (!allowed) return res.status(403).json({ success: false, message: accessMessage ?? 'forbidden' });
 
     const sender = await User.findById(req.user?.userId).select('_id name email');
     if (!sender) return res.status(401).json({ success: false, message: 'unauthorized' });

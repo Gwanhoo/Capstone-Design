@@ -1,7 +1,7 @@
 import { verifyToken } from '../utils/crypto.js';
 import { env } from '../config/env.js';
 import Project from '../models/Project.js';
-import { canAccessProject } from '../utils/projectAccess.js';
+import { canAccessProject, getProjectAccessMessage } from '../utils/projectAccess.js';
 
 const roomName = (projectId) => `project:${projectId}`;
 
@@ -36,7 +36,7 @@ export const registerSocketHandlers = (io) => {
           return;
         }
         if (!canAccessProject(project, socket.user?.userId)) {
-          ack?.({ ok: false, code: 403, message: 'forbidden' });
+          ack?.({ ok: false, code: 403, message: getProjectAccessMessage(project, socket.user?.userId) });
           return;
         }
 

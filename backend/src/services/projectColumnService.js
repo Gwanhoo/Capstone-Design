@@ -37,9 +37,9 @@ const ensureProjectColumns = async (project) => {
 };
 
 export const getColumnsForProject = async (projectId, userId) => {
-  const { project, allowed } = await findAccessibleProject(projectId, userId);
-  if (!project) return { project: null, allowed: false, columns: [] };
-  if (!allowed) return { project, allowed: false, columns: [] };
+  const { project, allowed, message } = await findAccessibleProject(projectId, userId);
+  if (!project) return { project: null, allowed: false, columns: [], message };
+  if (!allowed) return { project, allowed: false, columns: [], message };
 
   const columns = await ensureProjectColumns(project);
   return { project, allowed: true, columns: sanitizeColumns(columns) };

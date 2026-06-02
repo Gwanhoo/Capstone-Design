@@ -171,6 +171,12 @@ export function useKanbanBoard(projectId: string) {
       }
     };
 
+    const handleProjectUpdated = ({ projectId: updatedProjectId, isArchived, createdBy }: { projectId: string; isArchived?: boolean; createdBy?: string }) => {
+      if (updatedProjectId === projectId && isArchived === true) {
+        window.dispatchEvent(new CustomEvent("project:archived", { detail: { projectId: updatedProjectId, createdBy } }));
+      }
+    };
+
     socket.on("task:created", handleCreated);
     socket.on("task:updated", handleUpdated);
     socket.on("task:deleted", handleDeleted);
@@ -179,6 +185,7 @@ export function useKanbanBoard(projectId: string) {
     socket.on("column:updated", handleColumnUpdated);
     socket.on("column:deleted", handleColumnDeleted);
     socket.on("project:deleted", handleProjectDeleted);
+    socket.on("project:updated", handleProjectUpdated);
 
     return () => {
       socket.emit("leave-project", { projectId });
@@ -190,6 +197,7 @@ export function useKanbanBoard(projectId: string) {
       socket.off("column:updated", handleColumnUpdated);
       socket.off("column:deleted", handleColumnDeleted);
       socket.off("project:deleted", handleProjectDeleted);
+      socket.off("project:updated", handleProjectUpdated);
       disconnectSocket();
     };
   }, [projectId]);
