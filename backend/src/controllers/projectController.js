@@ -6,6 +6,7 @@ import ChatMessage from '../models/ChatMessage.js';
 import ProjectInvitation from '../models/ProjectInvitation.js';
 import { canAccessProject } from '../utils/projectAccess.js';
 import { getProjectRoomName } from '../sockets/index.js';
+import { analyzeBoardWithOpenAi, buildBoardSnapshot, createFallbackAnalysis } from '../ai/boardAnalysisService.js';
 import {
   createProjectColumn,
   deleteProjectColumn,
@@ -232,6 +233,37 @@ export const getProjectColumns = async (req, res) => {
     if (failure) return failure;
 
     return res.status(200).json({ success: true, data: result.columns });
+  } catch (error) {
+    return handleError(res, error);
+  }
+};
+
+
+export const analyzeProjectBoard = async (req, res) => {
+  const { projectId } = req.params;
+
+  try {
+    const result = await getColumnsForProject(projectId, req.user?.userId);
+    const failure = handleColumnServiceResult(res, result);
+    if (failure) return failure;
+
+    const tasks = await Task.find({ projectId }).sort({ columnId: 1, order: 1, createdAt: 1 });
+    const snapshot = buildBoardSnapshot({ project: result.project, columns: result.columns, tasks });
+
+    try {
+      const analysis = await analyzeBoardWithOpenAi(snapshot);
+      return res.status(200).json({ success: true, data: { ...analysis, snapshot } });
+    } catch (aiError) {
+      console.error('OpenAI board analysis failed:', aiError);
+      return res.status(200).json({
+        success: true,
+        data: {
+          ...createFallbackAnalysis(snapshot),
+          snapshot,
+          fallback: true,
+        },
+      });
+    }
   } catch (error) {
     return handleError(res, error);
   }

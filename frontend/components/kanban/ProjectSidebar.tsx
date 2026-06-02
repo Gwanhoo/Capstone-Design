@@ -12,7 +12,7 @@ const menus = [
   { label: "설정", path: "settings", icon: Settings },
 ];
 
-export function ProjectSidebar({ projectId, projectName = "프로젝트" }: { projectId: string; projectName?: string }) {
+export function ProjectSidebar({ projectId, projectName = "프로젝트", onAnalyzeBoard, isAnalyzingBoard }: { projectId: string; projectName?: string; onAnalyzeBoard?: () => void; isAnalyzingBoard?: boolean }) {
   const pathname = usePathname();
 
   return (
@@ -57,10 +57,17 @@ export function ProjectSidebar({ projectId, projectName = "프로젝트" }: { pr
             <p className="text-[11px] text-on-surface-variant">업무 흐름을 분석할 수 있어요.</p>
           </div>
         </div>
-        <Link href={`/projects/${projectId}/board`} className="flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/5 text-xs font-semibold text-primary transition hover:bg-white/10">
-          <Sparkles className="h-3.5 w-3.5" />
-          보드에서 AI 분석
-        </Link>
+        {onAnalyzeBoard ? (
+          <button type="button" onClick={onAnalyzeBoard} disabled={isAnalyzingBoard} className="flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/5 text-xs font-semibold text-primary transition hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60">
+            <Sparkles className="h-3.5 w-3.5" />
+            {isAnalyzingBoard ? "AI 분석 중..." : "보드에서 AI 분석"}
+          </button>
+        ) : (
+          <Link href={`/projects/${projectId}/board`} className="flex h-9 w-full items-center justify-center gap-2 rounded-lg border border-white/15 bg-white/5 text-xs font-semibold text-primary transition hover:bg-white/10">
+            <Sparkles className="h-3.5 w-3.5" />
+            보드에서 AI 분석
+          </Link>
+        )}
       </div>
     </aside>
   );

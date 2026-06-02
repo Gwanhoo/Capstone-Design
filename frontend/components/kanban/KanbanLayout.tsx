@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MessageSquareText, X } from "lucide-react";
 import { getProjectById, Project } from "@/lib/api/projectApi";
-import { AiGeneratedTask, decomposeProjectTasks } from "@/lib/api/aiApi";
+import { AiGeneratedTask, BoardAnalysisResult, analyzeProjectBoard, decomposeProjectTasks } from "@/lib/api/aiApi";
 import { KanbanBoard } from "./KanbanBoard";
 import { KanbanHeader } from "./KanbanHeader";
 import { ProjectSidebar } from "./ProjectSidebar";
@@ -14,6 +14,8 @@ import { useKanbanBoard } from "./useKanbanBoard";
 import { AiTaskPreviewModal } from "./AiTaskPreviewModal";
 import { AiTaskPromptModal } from "./AiTaskPromptModal";
 import { ColumnCreateModal } from "./ColumnCreateModal";
+import { ProjectProgressBar } from "./ProjectProgressBar";
+import { BoardAnalysisPanel } from "./BoardAnalysisPanel";
 
 const priorityToFrontend: Record<AiGeneratedTask["priority"], "긴급" | "높음" | "보통" | "낮음"> = {
   urgent: "긴급",
@@ -21,6 +23,10 @@ const priorityToFrontend: Record<AiGeneratedTask["priority"], "긴급" | "높음
   medium: "보통",
   low: "낮음",
 };
+
+const doneColumnTitles = new Set(["완료", "done", "끝", "완료됨"]);
+
+const isDoneColumnTitle = (title: string) => doneColumnTitles.has(title.trim().toLowerCase());
 
 export function KanbanLayout({ projectId }: { projectId: string }) {
   const router = useRouter();
@@ -39,6 +45,20 @@ export function KanbanLayout({ projectId }: { projectId: string }) {
   const [aiMessage, setAiMessage] = useState<string | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
   const [isChatDrawerOpen, setIsChatDrawerOpen] = useState(false);
+  const [isBoardAnalysisOpen, setIsBoardAnalysisOpen] = useState(false);
+  const [isBoardAnalyzing, setIsBoardAnalyzing] = useState(false);
+  const [boardAnalysis, setBoardAnalysis] = useState<BoardAnalysisResult | null>(null);
+  const [boardAnalysisError, setBoardAnalysisError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const onProjectDeleted = (event: Event) => {
+      const deletedProjectId = (event as CustomEvent<{ projectId: string }>).detail?.projectId;
+      if (deletedProjectId === projectId) router.replace("/dashboard/projects");
+    };
+
+    window.addEventListener("project:deleted", onProjectDeleted);
+    return () => window.removeEventListener("project:deleted", onProjectDeleted);
+  }, [projectId, router]);
 
   useEffect(() => {
     const onProjectDeleted = (event: Event) => {
@@ -71,6 +91,30 @@ export function KanbanLayout({ projectId }: { projectId: string }) {
     title: task.title,
     status: task.columnId,
   }));
+
+  const progress = useMemo(() => {
+    const totalCount = Object.keys(board.tasks).length;
+    const doneColumnIds = new Set(board.orderedColumns.filter((column) => isDoneColumnTitle(column.title)).map((column) => column.id));
+    const doneCount = Object.values(board.tasks).filter((task) => doneColumnIds.has(task.columnId)).length;
+    const percent = totalCount === 0 ? 0 : Math.round((doneCount / totalCount) * 100);
+
+    return { totalCount, doneCount, percent };
+  }, [board.orderedColumns, board.tasks]);
+
+  const handleAnalyzeBoard = async () => {
+    try {
+      setIsBoardAnalysisOpen(true);
+      setIsBoardAnalyzing(true);
+      setBoardAnalysisError(null);
+      const result = await analyzeProjectBoard(projectId);
+      setBoardAnalysis(result);
+    } catch (error) {
+      console.error(error);
+      setBoardAnalysisError("AI 보드 분석에 실패했습니다.");
+    } finally {
+      setIsBoardAnalyzing(false);
+    }
+  };
 
   const handleGenerateAiTasks = async (prompt: string) => {
     if (!project) {
@@ -145,7 +189,7 @@ export function KanbanLayout({ projectId }: { projectId: string }) {
 
   return (
     <div className="flex h-screen bg-surface text-on-surface">
-      <ProjectSidebar projectId={projectId} projectName={project?.name} />
+      <ProjectSidebar projectId={projectId} projectName={project?.name} onAnalyzeBoard={handleAnalyzeBoard} isAnalyzingBoard={isBoardAnalyzing} />
       <div className="flex min-w-0 flex-1 flex-col">
         <KanbanHeader
           onGenerateAiTask={() => setIsAiPromptOpen(true)}
@@ -153,7 +197,9 @@ export function KanbanLayout({ projectId }: { projectId: string }) {
           projectName={isProjectLoading ? "프로젝트 불러오는 중..." : project?.name || "프로젝트"}
         />
         <div className="relative flex min-h-0 flex-1 overflow-hidden">
-          <div className="min-w-0 flex-1 overflow-hidden">
+          <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
+            {!board.isLoading ? <ProjectProgressBar percent={progress.percent} doneCount={progress.doneCount} totalCount={progress.totalCount} /> : null}
+            <div className="min-h-0 flex-1 overflow-hidden">
             {board.isLoading ? <div className="px-4 py-4 text-sm text-on-surface-variant">작업을 불러오는 중...</div> : <KanbanBoard
               orderedColumns={board.orderedColumns}
               tasks={board.tasks}
@@ -168,8 +214,10 @@ export function KanbanLayout({ projectId }: { projectId: string }) {
               updateTaskMemo={board.updateTaskMemo}
               deleteTask={board.deleteTask}
             />}
+            </div>
             <div className="pointer-events-none absolute bottom-4 left-4 z-10 space-y-1">
               {isAiLoading ? <div className="pointer-events-auto rounded-lg border border-primary/20 bg-surface-container-high/95 px-3 py-2 text-xs text-primary shadow-lg">AI가 프로젝트를 분석하는 중...</div> : null}
+              {isBoardAnalyzing ? <div className="pointer-events-auto rounded-lg border border-primary/20 bg-surface-container-high/95 px-3 py-2 text-xs text-primary shadow-lg">AI가 보드를 분석하는 중...</div> : null}
               {aiMessage && !isAiLoading ? <div className="pointer-events-auto rounded-lg border border-emerald-400/20 bg-surface-container-high/95 px-3 py-2 text-xs text-emerald-300 shadow-lg">{aiMessage}</div> : null}
               {aiError ? <div className="pointer-events-auto rounded-lg border border-red-400/20 bg-surface-container-high/95 px-3 py-2 text-xs text-red-300 shadow-lg">{aiError}</div> : null}
               {projectError ? <div className="pointer-events-auto rounded-lg border border-red-400/20 bg-surface-container-high/95 px-3 py-2 text-xs text-red-300 shadow-lg">{projectError}</div> : null}
@@ -185,6 +233,8 @@ export function KanbanLayout({ projectId }: { projectId: string }) {
             <MessageSquareText className="h-4 w-4" />
             팀 채팅
           </button>
+
+          {isBoardAnalysisOpen ? <BoardAnalysisPanel result={boardAnalysis} isLoading={isBoardAnalyzing} error={boardAnalysisError} onClose={() => setIsBoardAnalysisOpen(false)} /> : null}
 
           {isChatDrawerOpen ? (
             <div className="absolute inset-0 z-30 flex justify-end bg-black/35 backdrop-blur-[2px]" onClick={() => setIsChatDrawerOpen(false)}>

@@ -39,3 +39,41 @@ export const decomposeProjectTasks = async (payload: DecomposePayload) => {
     body: JSON.stringify(payload),
   });
 };
+
+export type BoardAnalysisSnapshot = {
+  progress: {
+    totalTaskCount: number;
+    doneTaskCount: number;
+    percent: number;
+  };
+  columns: Array<{
+    id: string;
+    name: string;
+    taskCount: number;
+    isDoneColumn: boolean;
+    tasks: Array<{
+      title: string;
+      description: string;
+      priority: string;
+      memo: string;
+      isDone: boolean;
+    }>;
+  }>;
+};
+
+export type BoardAnalysisResult = {
+  summary: string;
+  columnAnalysis: string[];
+  memoInsights: string[];
+  risks: string[];
+  recommendations: string[];
+  conclusion: string;
+  fallback?: boolean;
+  snapshot?: BoardAnalysisSnapshot;
+};
+
+export const analyzeProjectBoard = async (projectId: string) => {
+  return apiRequest<BoardAnalysisResult>(`/api/projects/${projectId}/ai/analyze-board`, {
+    method: "POST",
+  });
+};
