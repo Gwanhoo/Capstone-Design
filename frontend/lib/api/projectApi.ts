@@ -78,6 +78,12 @@ export const createProject = async (payload: { name: string; description?: strin
   return mapProject(data);
 };
 
+export const deleteProject = async (projectId: string) => {
+  await apiRequest<{ projectId: string }>(`/api/projects/${projectId}`, {
+    method: "DELETE",
+  });
+};
+
 export const getProjectMembers = async (projectId: string) => {
   const data = await apiRequest<MembersResponse>(`/api/projects/${projectId}/members`);
   return data.members.map((member) => mapMember(member, data.createdBy));
