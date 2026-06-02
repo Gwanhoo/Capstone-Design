@@ -20,7 +20,16 @@ type DecomposePayload = {
   existingTasks?: ExistingAiTask[];
 };
 
+export type AiGeneratedColumn = {
+  title: string;
+  tasks: AiGeneratedTask[];
+};
+
 type DecomposeResponse = {
+  selectedAgentType: string;
+  confidence: number;
+  reason: string;
+  columns: AiGeneratedColumn[];
   tasks: AiGeneratedTask[];
 };
 
