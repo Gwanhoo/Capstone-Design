@@ -19,6 +19,7 @@ import {
   Sparkles,
   Users,
   Workflow,
+  GripVertical,
   Zap
 } from "lucide-react";
 import { StatsCard } from "@/components/dashboard/StatsCard";
