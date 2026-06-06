@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { usePathname } from "next/navigation";
 import { AuthUser, getMe, login, register } from "@/lib/api/authApi";
 
 import { clearAccessToken, getAccessToken, setAccessToken } from "@/lib/api/token";
@@ -20,6 +21,8 @@ type AuthContextType = {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  const isPresentationRoute = pathname === "/presentation" || pathname.startsWith("/presentation/");
   const [user, setUser] = useState<AuthUser | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -41,6 +44,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const clearError = useCallback(() => setError(null), []);
 
   useEffect(() => {
+    if (isPresentationRoute) {
+      setIsLoading(false);
+      return;
+    }
+
     const bootstrap = async () => {
       const savedToken = getAccessToken();
 
@@ -60,7 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     bootstrap();
-  }, [logout, persistAuth]);
+  }, [isPresentationRoute, logout, persistAuth]);
 
 
   useEffect(() => {
