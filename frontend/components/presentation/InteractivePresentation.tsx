@@ -14,6 +14,7 @@ import {
   Layers3,
   MessageSquareText,
   Network,
+  Plus,
   RefreshCcw,
   Sparkles,
   Users,
