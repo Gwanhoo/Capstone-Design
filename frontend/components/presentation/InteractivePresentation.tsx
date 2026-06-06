@@ -11,13 +11,10 @@ import {
   ChevronRight,
   Database,
   GitBranch,
-  GripVertical,
   Layers3,
   MessageSquareText,
   Network,
-  Plus,
   RefreshCcw,
-  Send,
   Sparkles,
   Users,
   Workflow,
@@ -61,12 +58,23 @@ const features: FeatureCard[] = [
 ];
 
 const techStacks = [
-  { group: "Frontend", items: ["Next.js App Router", "React", "TypeScript", "Tailwind CSS"] },
+  { group: "Frontend", items: ["Next.js", "React", "TypeScript", "Tailwind"] },
   { group: "Backend", items: ["Node.js", "Express"] },
   { group: "Database", items: ["MongoDB"] },
   { group: "Realtime", items: ["Socket.io"] },
   { group: "AI", items: ["OpenAI API"] }
 ];
+
+const demoMemos = [
+  "프로젝트 초대 수락 플로우 UX 개선 필요",
+  "칸반 카드 이동 시 WebSocket 동기화 정상 작동",
+  "AI 작업 분할 결과를 사용자가 수정할 수 있도록 개선 예정",
+  "발표 전 프로젝트 보관 기능과 메모 요약 기능 정리"
+];
+
+const demoMemoSummary = `실시간 협업과 칸반 카드 동기화는 안정화된 상태입니다.
+초대 UX, AI 작업 분할 수정, 프로젝트 보관 기능 개선이 남았습니다.
+발표에서는 메모 요약과 AI 보드 분석을 핵심 시연으로 연결하는 것이 좋습니다.`;
 
 const architectureNodes = [
   { label: "Frontend", detail: "Next.js / React", icon: <Workflow className="h-5 w-5" /> },
@@ -393,8 +401,8 @@ export function InteractivePresentation() {
         <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.035)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.035)_1px,transparent_1px)] bg-[size:72px_72px] [mask-image:radial-gradient(circle_at_center,black,transparent_78%)]" />
       </div>
 
-      <section className="relative z-10 flex min-h-screen items-center px-6 py-24 sm:px-10 lg:px-16">
-        <div className="mx-auto grid w-full max-w-7xl items-center gap-12 lg:grid-cols-[1fr_0.85fr]">
+      <section className="relative z-10 flex min-h-[88vh] items-center px-6 py-16 sm:px-10 lg:px-16">
+        <div className="mx-auto grid w-full max-w-7xl items-center gap-10 lg:grid-cols-[1fr_0.85fr]">
           <Reveal>
             <p className="mb-5 inline-flex rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold uppercase tracking-[0.32em] text-tertiary backdrop-blur">캡스톤 디자인 발표</p>
             <h1 className="max-w-4xl text-6xl font-black tracking-[-0.08em] text-white sm:text-7xl lg:text-8xl">Kanban AI</h1>
@@ -409,7 +417,7 @@ export function InteractivePresentation() {
             </div>
           </Reveal>
 
-          <Reveal className="lg:translate-y-10">
+          <Reveal className="lg:translate-y-6">
             <div className="relative rounded-[2rem] border border-white/10 bg-white/[0.06] p-4 shadow-2xl backdrop-blur-2xl">
               <div className="absolute -right-6 -top-6 rounded-3xl border border-tertiary/30 bg-tertiary/10 px-5 py-4 text-sm font-bold text-tertiary shadow-xl backdrop-blur">발표 전용 안전 모드</div>
               <div className="rounded-[1.5rem] border border-white/10 bg-black/30 p-4">
@@ -453,7 +461,7 @@ export function InteractivePresentation() {
             <h2 className="max-w-3xl text-4xl font-black tracking-[-0.05em] text-white sm:text-6xl">핵심 기능은 실제 mock 인터랙션으로 모두 시연합니다.</h2>
             <p className="max-w-md text-sm leading-6 text-outline">카드 생성, 드래그 앤 드롭, 팀 채팅, 메모, AI 기능, 이벤트 로그까지 발표 페이지 안에서 확인합니다.</p>
           </div>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {features.map((feature) => (
               <article key={feature.title} className="group rounded-3xl border border-white/10 bg-white/[0.045] p-6 backdrop-blur transition duration-300 hover:-translate-y-1 hover:border-primary/30 hover:bg-primary/[0.07]">
                 <div className="mb-6 inline-flex rounded-2xl bg-primary/15 p-3 text-primary transition group-hover:scale-110">{feature.icon}</div>
