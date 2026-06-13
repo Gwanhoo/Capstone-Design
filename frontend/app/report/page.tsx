@@ -215,6 +215,8 @@ export default function ReportPage() {
             <div><dt>문서 유형</dt><dd>캡스톤 디자인 완료보고서</dd></div>
             <div><dt>제출 형식</dt><dd>웹 페이지 인쇄 PDF</dd></div>
             <div><dt>작성 기준</dt><dd>REPORT_CONTENT.md</dd></div>
+            <div><dt>학번</dt><dd>202301078</dd></div>
+            <div><dt>성명</dt><dd>김관호</dd></div>
           </dl>
         </section>
 
