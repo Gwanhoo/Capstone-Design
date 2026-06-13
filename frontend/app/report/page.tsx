@@ -18,17 +18,47 @@ const tocItems = [
   { id: "appendix", title: "기타" }
 ];
 
-const screenshotPlaceholders = [
-  "로그인",
-  "대시보드",
-  "프로젝트 생성",
-  "프로젝트 초대",
-  "칸반 보드",
-  "Task 관리",
-  "실시간 채팅",
-  "메모",
-  "AI 작업 분할",
-  "AI 프로젝트 분석"
+const implementationScreenshots = [
+  {
+    title: "로그인",
+    image: "/report/login.svg",
+    description: "이메일과 비밀번호를 입력해 협업 공간에 접근하는 인증 화면입니다."
+  },
+  {
+    title: "대시보드",
+    image: "/report/dashboard.svg",
+    description: "참여 중인 프로젝트, 받은 초대, 프로젝트 통계를 한 화면에서 확인합니다."
+  },
+  {
+    title: "프로젝트 생성",
+    image: "/report/project-create.svg",
+    description: "프로젝트 이름과 설명을 입력하면 협업용 칸반 보드가 생성됩니다."
+  },
+  {
+    title: "프로젝트 초대",
+    image: "/report/project-invite.svg",
+    description: "프로젝트 멤버 관리 패널에서 이메일 기반 초대와 소유자 정보를 관리합니다."
+  },
+  {
+    title: "칸반 보드",
+    image: "/report/kanban-board.svg",
+    description: "할 일, 진행 중, 완료 컬럼과 카드 목록, 프로젝트 진행률을 함께 보여줍니다."
+  },
+  {
+    title: "실시간 채팅",
+    image: "/report/realtime-chat.svg",
+    description: "보드 우측 채팅 패널에서 프로젝트 참여자가 메시지를 실시간으로 공유합니다."
+  },
+  {
+    title: "메모",
+    image: "/report/memo.svg",
+    description: "카드별 메모 모달에서 작업 관련 기록을 작성하고 저장합니다."
+  },
+  {
+    title: "AI 프로젝트 분석",
+    image: "/report/ai-project-analysis.svg",
+    description: "AI가 칸반 보드와 메모를 기반으로 현재 상태, 위험 요소, 추천 작업을 요약합니다."
+  }
 ];
 
 const fallbackReport = `# AI 기반 실시간 협업 칸반 시스템
@@ -151,15 +181,17 @@ function createReportSections(markdown: string): ReportSection[] {
   ];
 }
 
-function ScreenshotPlaceholder({ title, index }: { title: string; index: number }) {
+function ImplementationScreenshot({ title, image, description, index }: { title: string; image: string; description: string; index: number }) {
   return (
-    <figure className="screenshot-placeholder">
-      <div className="screenshot-placeholder-frame">
-        <span className="text-xs font-semibold uppercase tracking-[0.2em] text-neutral-500">Screenshot {String(index + 1).padStart(2, "0")}</span>
-        <strong>{title}</strong>
-        <p>추후 실제 구현 화면 이미지를 이 영역에 삽입할 수 있습니다.</p>
+    <figure className="implementation-screenshot">
+      <div className="implementation-screenshot-image-wrap">
+        <img src={image} alt={`${title} 구현 화면`} loading="lazy" />
       </div>
-      <figcaption>{title} 화면</figcaption>
+      <figcaption>
+        <span>Screenshot {String(index + 1).padStart(2, "0")}</span>
+        <strong>{title}</strong>
+        <p>{description}</p>
+      </figcaption>
     </figure>
   );
 }
@@ -206,11 +238,11 @@ export default function ReportPage() {
             {section.id === "implementation-result" ? (
               <div className="implementation-section">
                 <p className="implementation-note">
-                  구현 결과는 주요 사용자 흐름별 화면 단위로 정리합니다. 아래 영역은 이미지 교체가 쉽도록 독립 Placeholder로 구성했습니다.
+                  구현 결과는 업로드된 화면을 기능별로 분석해 주요 사용자 흐름 순서에 맞춰 배치했습니다. 적절한 화면이 확인되지 않은 Task 관리와 AI 작업 분할 항목은 별도 Screenshot 영역에서 제외했습니다.
                 </p>
                 <div className="screenshot-grid">
-                  {screenshotPlaceholders.map((placeholder, placeholderIndex) => (
-                    <ScreenshotPlaceholder key={placeholder} title={placeholder} index={placeholderIndex} />
+                  {implementationScreenshots.map((screenshot, screenshotIndex) => (
+                    <ImplementationScreenshot key={screenshot.title} {...screenshot} index={screenshotIndex} />
                   ))}
                 </div>
               </div>
