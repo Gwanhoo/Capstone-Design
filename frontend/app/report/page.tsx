@@ -1,5 +1,6 @@
 import fs from "fs";
 import path from "path";
+import Image from "next/image";
 import { MarkdownRenderer } from "@/components/report/MarkdownRenderer";
 import { PrintButton } from "@/components/report/PrintButton";
 
@@ -21,42 +22,42 @@ const tocItems = [
 const implementationScreenshots = [
   {
     title: "로그인",
-    image: "/report/login.svg",
+    image: "/report/login.png",
     description: "이메일과 비밀번호를 입력해 협업 공간에 접근하는 인증 화면입니다."
   },
   {
     title: "대시보드",
-    image: "/report/dashboard.svg",
+    image: "/report/dashboard.png",
     description: "참여 중인 프로젝트, 받은 초대, 프로젝트 통계를 한 화면에서 확인합니다."
   },
   {
     title: "프로젝트 생성",
-    image: "/report/project-create.svg",
+    image: "/report/project-create.png",
     description: "프로젝트 이름과 설명을 입력하면 협업용 칸반 보드가 생성됩니다."
   },
   {
     title: "프로젝트 초대",
-    image: "/report/project-invite.svg",
+    image: "/report/project-invite.png",
     description: "프로젝트 멤버 관리 패널에서 이메일 기반 초대와 소유자 정보를 관리합니다."
   },
   {
     title: "칸반 보드",
-    image: "/report/kanban-board.svg",
+    image: "/report/kanban-board.png",
     description: "할 일, 진행 중, 완료 컬럼과 카드 목록, 프로젝트 진행률을 함께 보여줍니다."
   },
   {
     title: "실시간 채팅",
-    image: "/report/realtime-chat.svg",
+    image: "/report/chat.png",
     description: "보드 우측 채팅 패널에서 프로젝트 참여자가 메시지를 실시간으로 공유합니다."
   },
   {
     title: "메모",
-    image: "/report/memo.svg",
+    image: "/report/memo.png",
     description: "카드별 메모 모달에서 작업 관련 기록을 작성하고 저장합니다."
   },
   {
     title: "AI 프로젝트 분석",
-    image: "/report/ai-project-analysis.svg",
+    image: "/report/ai-analysis.png",
     description: "AI가 칸반 보드와 메모를 기반으로 현재 상태, 위험 요소, 추천 작업을 요약합니다."
   }
 ];
@@ -185,7 +186,7 @@ function ImplementationScreenshot({ title, image, description, index }: { title:
   return (
     <figure className="implementation-screenshot">
       <div className="implementation-screenshot-image-wrap">
-        <img src={image} alt={`${title} 구현 화면`} loading="lazy" />
+        <Image src={image} alt={`${title} 구현 화면`} fill sizes="(max-width: 780px) 100vw, 50vw" style={{ objectFit: "contain" }} />
       </div>
       <figcaption>
         <span>Screenshot {String(index + 1).padStart(2, "0")}</span>
@@ -238,7 +239,7 @@ export default function ReportPage() {
             {section.id === "implementation-result" ? (
               <div className="implementation-section">
                 <p className="implementation-note">
-                  구현 결과는 업로드된 화면을 기능별로 분석해 주요 사용자 흐름 순서에 맞춰 배치했습니다. 적절한 화면이 확인되지 않은 Task 관리와 AI 작업 분할 항목은 별도 Screenshot 영역에서 제외했습니다.
+                  구현 결과는 주요 사용자 흐름별 화면 단위로 정리합니다.
                 </p>
                 <div className="screenshot-grid">
                   {implementationScreenshots.map((screenshot, screenshotIndex) => (
